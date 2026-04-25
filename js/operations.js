@@ -4,165 +4,11 @@
 // ============================================
 
 const FHIR_OPERATIONS = {
-    // 1. Server CapabilityStatement
-    'capability': {
-        id: 'capability',
-        name: 'Server CapabilityStatement',
-        icon: '📋',
-        method: 'GET',
-        endpoint: '/metadata',
-        server: 'cdr',
-        description: 'Discover what this FHIR server can do',
-        teaching: {
-            title: 'Why CapabilityStatement Matters',
-            content: `
-                <p>Every FHIR server must publish what it can do. This is the "menu" that tells clients:</p>
-                <ul>
-                    <li><strong>software.name, software.version</strong> — What server software is running</li>
-                    <li><strong>rest[0].resource</strong> — Every resource type supported</li>
-                    <li><strong>format</strong> — Which serializations (json, xml)</li>
-                </ul>
-                <p><strong>Teaching moment:</strong> This is the <em>DISCOVERABILITY</em> that HL7 v2 never had.</p>
-            `
-        },
-        hasBody: false,
-        params: []
-    },
-
-    // 2. Search Patients by name (the collision problem)
-    'search-patients': {
-        id: 'search-patients',
-        name: 'Search Patients by Name',
-        icon: '🔍',
-        method: 'GET',
-        endpoint: '/Patient',
-        server: 'cdr',
-        description: 'The name-collision problem — how many "Rico Dela Cruz" patients exist?',
-        teaching: {
-            title: 'The Name Collision Problem',
-            content: `
-                <p>How many "Rico Dela Cruz" patients exist on this public server? Probably many.</p>
-                <p><strong>Teaching moment:</strong> Name matching is NOT patient matching. This is exactly the problem a <strong>Master Patient Index / PhilSys</strong> linkage solves.</p>
-                <p>In real-world scenarios, searching by name alone can return hundreds of matches. That's why we need unique identifiers.</p>
-            `
-        },
-        hasBody: false,
-        params: [
-            {
-                name: 'family',
-                label: 'Family Name',
-                type: 'text',
-                default: 'Dela Cruz',
-                required: false,
-                description: 'Patient family name'
-            },
-            {
-                name: 'given',
-                label: 'Given Name',
-                type: 'text',
-                default: 'Rico',
-                required: false,
-                description: 'Patient first/given name'
-            },
-            {
-                name: '_count',
-                label: 'Result Count',
-                type: 'number',
-                default: '5',
-                required: false,
-                description: 'Maximum number of results to return'
-            }
-        ]
-    },
-
-    // 3. Retrieve a specific Patient (by id)
-    'get-patient': {
-        id: 'get-patient',
-        name: 'Get Patient by ID',
-        icon: '👤',
-        method: 'GET',
-        endpoint: '/Patient/{id}',
-        server: 'cdr',
-        description: 'Retrieve a specific patient resource by server-assigned ID',
-        teaching: {
-            title: 'Understanding the Patient Resource Structure',
-            content: `
-                <p>The classic FHIR Patient resource. Note the structure:</p>
-                <ul>
-                    <li><code>resourceType</code>, <code>id</code>, <code>meta</code> — Resource metadata</li>
-                    <li><code>identifier</code> — Array of system + value (NOT just value!)</li>
-                    <li><code>name</code> — Array with use, family, given</li>
-                    <li><code>telecom</code>, <code>gender</code>, <code>birthDate</code>, <code>address</code></li>
-                </ul>
-                <p><strong>Teaching moment:</strong> Every field has a <em>DEFINED place</em>. Compare this to a free-text clinical note where structure is unpredictable.</p>
-            `
-        },
-        hasBody: false,
-        params: [
-            {
-                name: 'id',
-                label: 'Patient ID',
-                type: 'text',
-                default: 'example',
-                required: true,
-                description: 'Server-assigned patient ID (e.g., "example", "123")'
-            }
-        ]
-    },
-
-    // 4. Search Observations by LOINC code
-    'search-observations': {
-        id: 'search-observations',
-        name: 'Search Observations',
-        icon: '📊',
-        method: 'GET',
-        endpoint: '/Observation',
-        server: 'cdr',
-        description: 'Search for observations using LOINC codes',
-        teaching: {
-            title: 'Semantic Interoperability in Action',
-            content: `
-                <p>Search for body weight observations using the LOINC code <code>29463-7</code>.</p>
-                <p>Note the search syntax: <code>code=SYSTEM|CODE</code>. The code alone is ambiguous. The system+code pair is globally unique.</p>
-                <p><strong>Teaching moment:</strong> This is <em>semantic interoperability</em> in action. Any server in the world that implemented the same standard would return the same conceptual answer.</p>
-                <p>Common LOINC codes:</p>
-                <ul>
-                    <li><code>29463-7</code> — Body weight</li>
-                    <li><code>8302-2</code> — Body height</li>
-                    <li><code>8480-6</code> — Systolic blood pressure</li>
-                    <li><code>8462-4</code> — Diastolic blood pressure</li>
-                </ul>
-            `
-        },
-        hasBody: false,
-        params: [
-            {
-                name: 'code',
-                label: 'LOINC Code',
-                type: 'select',
-                default: 'http://loinc.org|29463-7',
-                required: false,
-                description: 'LOINC code with system',
-                options: [
-                    { value: 'http://loinc.org|29463-7', label: '29463-7 - Body weight' },
-                    { value: 'http://loinc.org|8302-2', label: '8302-2 - Body height' },
-                    { value: 'http://loinc.org|8480-6', label: '8480-6 - Systolic BP' },
-                    { value: 'http://loinc.org|8462-4', label: '8462-4 - Diastolic BP' },
-                    { value: 'http://loinc.org|8867-4', label: '8867-4 - Heart rate' }
-                ]
-            },
-            {
-                name: '_count',
-                label: 'Result Count',
-                type: 'number',
-                default: '5',
-                required: false,
-                description: 'Maximum results to return'
-            }
-        ]
-    },
-
-    // 5. CREATE Rico's Patient resource (PUT)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // PRIMARY OPERATIONS (Main Workflow)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    
+    // 1. Create Patient (Rico) - Starting point
     'create-patient': {
         id: 'create-patient',
         name: 'Create Patient (Rico)',
@@ -170,6 +16,7 @@ const FHIR_OPERATIONS = {
         method: 'PUT',
         endpoint: '/Patient',
         server: 'cdr',
+        category: 'primary',
         description: 'Create Rico Dela Cruz patient resource on the server',
         teaching: {
             title: 'Creating Resources: ID vs Identifier',
@@ -247,74 +94,107 @@ const FHIR_OPERATIONS = {
         ]
     },
 
-    // 6. GET Rico back by identifier
-    'get-rico': {
-        id: 'get-rico',
-        name: 'Find Rico by Identifier',
-        icon: '🎯',
+    // 2. Search Patients by name (the collision problem)
+    'search-patients': {
+        id: 'search-patients',
+        name: 'Search Patients by Name',
+        icon: '🔍',
         method: 'GET',
         endpoint: '/Patient',
         server: 'cdr',
-        description: 'Search for Rico using our own identifier system',
+        category: 'primary',
+        description: 'The name-collision problem — how many "Rico Dela Cruz" patients exist?',
         teaching: {
-            title: 'The Round Trip Test',
+            title: 'The Name Collision Problem',
             content: `
-                <p>Search Rico back using our OWN identifier system — not the server-assigned id.</p>
-                <p>This is the round trip. In production, this is exactly how one facility would retrieve a patient that another facility created.</p>
-                <p><strong>Teaching moment:</strong> Without the identifier <code>system</code> URL, you are searching by a string that could belong to anyone.</p>
-                <p>The full identifier <code>http://ntp.doh.gov.ph/ids|PH-TB-2026-0142</code> combines:</p>
+                <p>How many "Rico Dela Cruz" patients exist on this public server? Probably many.</p>
+                <p><strong>Teaching moment:</strong> Name matching is NOT patient matching. This is exactly the problem a <strong>Master Patient Index / PhilSys</strong> linkage solves.</p>
+                <p>In real-world scenarios, searching by name alone can return hundreds of matches. That's why we need unique identifiers.</p>
+            `
+        },
+        hasBody: false,
+        params: [
+            {
+                name: 'family',
+                label: 'Family Name',
+                type: 'text',
+                default: 'Dela Cruz',
+                required: false,
+                description: 'Patient family name'
+            },
+            {
+                name: 'given',
+                label: 'Given Name',
+                type: 'text',
+                default: 'Rico',
+                required: false,
+                description: 'Patient first/given name'
+            },
+            {
+                name: '_count',
+                label: 'Result Count',
+                type: 'number',
+                default: '5',
+                required: false,
+                description: 'Maximum number of results to return'
+            }
+        ]
+    },
+
+    // 3. Search Observations by LOINC code
+    'search-observations': {
+        id: 'search-observations',
+        name: 'Search Observations',
+        icon: '📊',
+        method: 'GET',
+        endpoint: '/Observation',
+        server: 'cdr',
+        category: 'primary',
+        description: 'Search for observations using LOINC codes',
+        teaching: {
+            title: 'Semantic Interoperability in Action',
+            content: `
+                <p>Search for body weight observations using the LOINC code <code>29463-7</code>.</p>
+                <p>Note the search syntax: <code>code=SYSTEM|CODE</code>. The code alone is ambiguous. The system+code pair is globally unique.</p>
+                <p><strong>Teaching moment:</strong> This is <em>semantic interoperability</em> in action. Any server in the world that implemented the same standard would return the same conceptual answer.</p>
+                <p>Common LOINC codes:</p>
                 <ul>
-                    <li><strong>System:</strong> <code>http://ntp.doh.gov.ph/ids</code> — The namespace/authority</li>
-                    <li><strong>Value:</strong> <code>PH-TB-2026-0142</code> — The actual ID within that namespace</li>
+                    <li><code>29463-7</code> — Body weight</li>
+                    <li><code>8302-2</code> — Body height</li>
+                    <li><code>8480-6</code> — Systolic blood pressure</li>
+                    <li><code>8462-4</code> — Diastolic blood pressure</li>
                 </ul>
             `
         },
         hasBody: false,
         params: [
             {
-                name: 'identifier',
-                label: 'Identifier (system|value)',
-                type: 'text',
-                default: 'http://ntp.doh.gov.ph/ids|PH-TB-2026-0142',
-                required: true,
-                description: 'Full identifier with system and value separated by |'
-            }
-        ]
-    },
-
-    // 7. The identifier-namespace problem (Scenario 1)
-    'namespace-problem': {
-        id: 'namespace-problem',
-        name: 'Namespace Problem Demo',
-        icon: '⚠️',
-        method: 'GET',
-        endpoint: '/Patient',
-        server: 'cdr',
-        description: 'Same identifier VALUE, different SYSTEM = no match',
-        teaching: {
-            title: 'Scenario 1: The Identifier Governance Problem',
-            content: `
-                <p>Same identifier VALUE. Different identifier SYSTEM. Result: <strong>no match</strong>.</p>
-                <p>This is <strong>Scenario 1</strong> in your exercise packet. The receiving hospital assumed the identifier belongs to its own namespace. It doesn't.</p>
-                <p><strong>Teaching moment:</strong> Semantic standards can't fix this. Syntactic compliance can't fix this.</p>
-                <p>Only <strong>identifier governance</strong> — a Master Patient Index or a national identity layer (PhilSys) — can.</p>
-                <p>This is why WHO SMART Guideline L3 (semantic standard) needs an L4 that includes <strong>governance</strong>.</p>
-            `
-        },
-        hasBody: false,
-        params: [
+                name: 'code',
+                label: 'LOINC Code',
+                type: 'select',
+                default: 'http://loinc.org|29463-7',
+                required: false,
+                description: 'LOINC code with system',
+                options: [
+                    { value: 'http://loinc.org|29463-7', label: '29463-7 - Body weight' },
+                    { value: 'http://loinc.org|8302-2', label: '8302-2 - Body height' },
+                    { value: 'http://loinc.org|8480-6', label: '8480-6 - Systolic BP' },
+                    { value: 'http://loinc.org|8462-4', label: '8462-4 - Diastolic BP' },
+                    { value: 'http://loinc.org|8867-4', label: '8867-4 - Heart rate' }
+                ]
+            },
             {
-                name: 'identifier',
-                label: 'Wrong Identifier System',
-                type: 'text',
-                default: 'http://different-hospital.example.org/mrn|PH-TB-2026-0142',
-                required: true,
-                description: 'Different system with same value = no results'
+                name: '_count',
+                label: 'Result Count',
+                type: 'number',
+                default: '5',
+                required: false,
+                description: 'Maximum results to return'
             }
         ]
     },
 
-    // 8. (Bonus) Search with _include
+    // 4. Search with _include
     'search-include': {
         id: 'search-include',
         name: 'Search with _include',
@@ -322,6 +202,7 @@ const FHIR_OPERATIONS = {
         method: 'GET',
         endpoint: '/Observation',
         server: 'cdr',
+        category: 'primary',
         description: 'Fetch observations AND their referenced patients in one call',
         teaching: {
             title: 'Efficient Data Retrieval with _include',
@@ -372,6 +253,145 @@ const FHIR_OPERATIONS = {
                 description: 'Maximum results'
             }
         ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // SECONDARY OPERATIONS (Additional Scenarios)
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    // 5. Find Rico by Identifier
+    'get-rico': {
+        id: 'get-rico',
+        name: 'Find Rico by Identifier',
+        icon: '🎯',
+        method: 'GET',
+        endpoint: '/Patient',
+        server: 'cdr',
+        category: 'secondary',
+        description: 'Search for Rico using our own identifier system',
+        teaching: {
+            title: 'The Round Trip Test',
+            content: `
+                <p>Search Rico back using our OWN identifier system — not the server-assigned id.</p>
+                <p>This is the round trip. In production, this is exactly how one facility would retrieve a patient that another facility created.</p>
+                <p><strong>Teaching moment:</strong> Without the identifier <code>system</code> URL, you are searching by a string that could belong to anyone.</p>
+                <p>The full identifier <code>http://ntp.doh.gov.ph/ids|PH-TB-2026-0142</code> combines:</p>
+                <ul>
+                    <li><strong>System:</strong> <code>http://ntp.doh.gov.ph/ids</code> — The namespace/authority</li>
+                    <li><strong>Value:</strong> <code>PH-TB-2026-0142</code> — The actual ID within that namespace</li>
+                </ul>
+            `
+        },
+        hasBody: false,
+        params: [
+            {
+                name: 'identifier',
+                label: 'Identifier (system|value)',
+                type: 'text',
+                default: 'http://ntp.doh.gov.ph/ids|PH-TB-2026-0142',
+                required: true,
+                description: 'Full identifier with system and value separated by |'
+            }
+        ]
+    },
+
+    // 6. The identifier-namespace problem (Scenario 1)
+    'namespace-problem': {
+        id: 'namespace-problem',
+        name: 'Namespace Problem Demo',
+        icon: '⚠️',
+        method: 'GET',
+        endpoint: '/Patient',
+        server: 'cdr',
+        category: 'secondary',
+        description: 'Same identifier VALUE, different SYSTEM = no match',
+        teaching: {
+            title: 'Scenario 1: The Identifier Governance Problem',
+            content: `
+                <p>Same identifier VALUE. Different identifier SYSTEM. Result: <strong>no match</strong>.</p>
+                <p>This is <strong>Scenario 1</strong> in your exercise packet. The receiving hospital assumed the identifier belongs to its own namespace. It doesn't.</p>
+                <p><strong>Teaching moment:</strong> Semantic standards can't fix this. Syntactic compliance can't fix this.</p>
+                <p>Only <strong>identifier governance</strong> — a Master Patient Index or a national identity layer (PhilSys) — can.</p>
+                <p>This is why WHO SMART Guideline L3 (semantic standard) needs an L4 that includes <strong>governance</strong>.</p>
+            `
+        },
+        hasBody: false,
+        params: [
+            {
+                name: 'identifier',
+                label: 'Wrong Identifier System',
+                type: 'text',
+                default: 'http://different-hospital.example.org/mrn|PH-TB-2026-0142',
+                required: true,
+                description: 'Different system with same value = no results'
+            }
+        ]
+    },
+
+    // 7. Retrieve a specific Patient (by id) - Bonus/Utility
+    'get-patient': {
+        id: 'get-patient',
+        name: 'Get Patient by ID',
+        icon: '👤',
+        method: 'GET',
+        endpoint: '/Patient/{id}',
+        server: 'cdr',
+        category: 'secondary',
+        description: 'Retrieve a specific patient resource by server-assigned ID',
+        teaching: {
+            title: 'Understanding the Patient Resource Structure',
+            content: `
+                <p>The classic FHIR Patient resource. Note the structure:</p>
+                <ul>
+                    <li><code>resourceType</code>, <code>id</code>, <code>meta</code> — Resource metadata</li>
+                    <li><code>identifier</code> — Array of system + value (NOT just value!)</li>
+                    <li><code>name</code> — Array with use, family, given</li>
+                    <li><code>telecom</code>, <code>gender</code>, <code>birthDate</code>, <code>address</code></li>
+                </ul>
+                <p><strong>Teaching moment:</strong> Every field has a <em>DEFINED place</em>. Compare this to a free-text clinical note where structure is unpredictable.</p>
+            `
+        },
+        hasBody: false,
+        params: [
+            {
+                name: 'id',
+                label: 'Patient ID',
+                type: 'text',
+                default: 'example',
+                required: true,
+                description: 'Server-assigned patient ID (e.g., "example", "123")'
+            }
+        ]
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // ADVANCED/DIAGNOSTICS (Hidden by default)
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    // 8. Server CapabilityStatement (Advanced - for developers)
+    'capability': {
+        id: 'capability',
+        name: 'Server CapabilityStatement',
+        icon: '⚙️',
+        method: 'GET',
+        endpoint: '/metadata',
+        server: 'cdr',
+        category: 'advanced',
+        description: 'Discover what this FHIR server can do (Advanced/Diagnostics)',
+        teaching: {
+            title: 'Why CapabilityStatement Matters',
+            content: `
+                <p>Every FHIR server must publish what it can do. This is the "menu" that tells clients:</p>
+                <ul>
+                    <li><strong>software.name, software.version</strong> — What server software is running</li>
+                    <li><strong>rest[0].resource</strong> — Every resource type supported</li>
+                    <li><strong>format</strong> — Which serializations (json, xml)</li>
+                </ul>
+                <p><strong>Teaching moment:</strong> This is the <em>DISCOVERABILITY</em> that HL7 v2 never had.</p>
+            `
+        },
+        hasBody: false,
+        params: []
     }
 };
 
@@ -418,11 +438,11 @@ const TERMINOLOGY_OPERATIONS = {
             {
                 name: 'id',
                 label: 'ValueSet',
-                type: 'dynamic-dropdown', // Will be populated from server
+                type: 'dynamic-dropdown',
                 default: '',
                 required: true,
                 description: 'Select a ValueSet to expand',
-                fetchSource: 'valuesets', // Key to fetch from server
+                fetchSource: 'valuesets',
                 optionLabelField: 'name',
                 optionValueField: 'id',
                 optionSubLabelField: 'status'

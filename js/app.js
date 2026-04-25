@@ -99,7 +99,10 @@ class FHIRExplorerApp {
 
     cacheElements() {
         // Main containers
-        this.operationsList = document.getElementById('operationsList');
+        this.operationsListPrimary = document.getElementById('operationsListPrimary');
+        this.operationsListSecondary = document.getElementById('operationsListSecondary');
+        this.operationsListAdvanced = document.getElementById('operationsListAdvanced');
+        this.advancedToggle = document.getElementById('advancedToggle');
         this.currentOperationTitle = document.getElementById('currentOperationTitle');
         this.currentOperationDesc = document.getElementById('currentOperationDesc');
         this.methodBadge = document.getElementById('methodBadge');
@@ -186,16 +189,51 @@ class FHIRExplorerApp {
     }
 
     renderOperationsList() {
-        this.operationsList.innerHTML = '';
+        // Clear all lists
+        this.operationsListPrimary.innerHTML = '';
+        this.operationsListSecondary.innerHTML = '';
+        this.operationsListAdvanced.innerHTML = '';
         
+        // Categorize and render operations
         Object.values(FHIR_OPERATIONS).forEach(op => {
             const btn = document.createElement('button');
             btn.className = 'operation-btn';
             btn.dataset.op = op.id;
             btn.innerHTML = `${op.icon} ${op.name}`;
             btn.addEventListener('click', () => this.loadOperation(op.id));
-            this.operationsList.appendChild(btn);
+            
+            // Add to appropriate list based on category
+            switch (op.category) {
+                case 'primary':
+                    this.operationsListPrimary.appendChild(btn);
+                    break;
+                case 'secondary':
+                    this.operationsListSecondary.appendChild(btn);
+                    break;
+                case 'advanced':
+                    this.operationsListAdvanced.appendChild(btn);
+                    break;
+                default:
+                    this.operationsListPrimary.appendChild(btn);
+            }
         });
+        
+        // Setup advanced toggle
+        if (this.advancedToggle) {
+            // Check localStorage for saved state
+            const isExpanded = localStorage.getItem('fhir_advanced_expanded') === 'true';
+            if (isExpanded) {
+                this.operationsListAdvanced.style.display = 'flex';
+                this.advancedToggle.classList.add('expanded');
+            }
+            
+            this.advancedToggle.addEventListener('click', () => {
+                const isCurrentlyExpanded = this.operationsListAdvanced.style.display !== 'none';
+                this.operationsListAdvanced.style.display = isCurrentlyExpanded ? 'none' : 'flex';
+                this.advancedToggle.classList.toggle('expanded', !isCurrentlyExpanded);
+                localStorage.setItem('fhir_advanced_expanded', !isCurrentlyExpanded);
+            });
+        }
     }
 
     loadOperation(opId) {

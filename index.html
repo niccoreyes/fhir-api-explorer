@@ -31,8 +31,25 @@
                 <div class="sidebar-section">
                     <h3>📋 FHIR Operations</h3>
                     <p class="server-info">CDR: cdr.fhirlab.net/fhir</p>
-                    <div class="operations-list" id="operationsList">
-                        <!-- Operations will be populated by JS -->
+                    
+                    <!-- Primary Operations -->
+                    <div class="operations-list" id="operationsListPrimary">
+                        <!-- Primary operations will be populated by JS -->
+                    </div>
+                    
+                    <!-- Secondary Operations -->
+                    <div class="operations-section-divider">Additional Scenarios</div>
+                    <div class="operations-list" id="operationsListSecondary">
+                        <!-- Secondary operations will be populated by JS -->
+                    </div>
+                    
+                    <!-- Advanced/Diagnostics (Collapsible) -->
+                    <div class="operations-advanced-toggle" id="advancedToggle">
+                        <span class="toggle-icon">▼</span>
+                        <span>Advanced / Diagnostics</span>
+                    </div>
+                    <div class="operations-list operations-advanced" id="operationsListAdvanced" style="display: none;">
+                        <!-- Advanced operations will be populated by JS -->
                     </div>
                 </div>
 

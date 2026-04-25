@@ -242,6 +242,53 @@ body {
     content: '●';
 }
 
+/* Operations Section Divider */
+.operations-section-divider {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: var(--space-md);
+    margin-bottom: var(--space-sm);
+    padding-left: var(--space-sm);
+}
+
+/* Advanced/Diagnostics Toggle */
+.operations-advanced-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--gray-100);
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-500);
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.operations-advanced-toggle:hover {
+    background: var(--gray-200);
+    color: var(--gray-700);
+}
+
+.operations-advanced-toggle .toggle-icon {
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+.operations-advanced-toggle.expanded .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.operations-advanced {
+    margin-top: var(--space-xs);
+}
+
 /* ============================================
    Main Panel
    ============================================ */
