@@ -162,10 +162,12 @@ class FHIRExplorerApp {
             });
         });
 
-        // JSON editor changes
-        this.jsonEditor.addEventListener('input', () => {
-            this.handleJsonEditorChange();
-        });
+        // JSON editor changes (old developer view - check if exists)
+        if (this.jsonEditor) {
+            this.jsonEditor.addEventListener('input', () => {
+                this.handleJsonEditorChange();
+            });
+        }
 
         // Mobile navigation
         if (this.mobileNavToggle) {
@@ -225,14 +227,18 @@ class FHIRExplorerApp {
             this.currentBodyTemplate = deepClone(this.currentOperation.bodyTemplate);
             this.currentBodyData = deepClone(this.currentOperation.bodyTemplate);
             this.renderBodyForm();
-            this.jsonEditor.value = JSON.stringify(this.currentBodyData, null, 2);
+            if (this.jsonEditor) {
+                this.jsonEditor.value = JSON.stringify(this.currentBodyData, null, 2);
+            }
             this.diffViewer.style.display = 'block';
             this.updateDiff();
         } else {
             this.currentBodyTemplate = null;
             this.currentBodyData = null;
             this.renderQueryParams();
-            this.jsonEditor.value = '';
+            if (this.jsonEditor) {
+                this.jsonEditor.value = '';
+            }
             this.diffViewer.style.display = 'none';
         }
 
@@ -273,7 +279,9 @@ class FHIRExplorerApp {
 
         this.teachingPanel.style.display = 'none';
         this.renderQueryParams();
-        this.jsonEditor.value = '';
+        if (this.jsonEditor) {
+            this.jsonEditor.value = '';
+        }
         this.diffViewer.style.display = 'none';
         this.responseSection.style.display = 'none';
 
@@ -389,60 +397,11 @@ class FHIRExplorerApp {
             return;
         }
 
-        // Group fields by card
-        const cardGroups = this.groupFieldsByCard(this.currentOperation.formFields);
-        
-        // Render each card
-        Object.entries(cardGroups).forEach(([cardId, fields]) => {
-            // Get card metadata from first field
-            const firstField = fields[0];
-            const cardTitle = firstField.cardTitle || cardId.charAt(0).toUpperCase() + cardId.slice(1);
-            const cardIcon = firstField.cardIcon || '📝';
-            
-            // Create card container
-            const card = document.createElement('div');
-            card.className = 'ehr-card';
-            card.dataset.cardId = cardId;
-            
-            // Create card header
-            const cardHeader = document.createElement('div');
-            cardHeader.className = 'ehr-card-header';
-            cardHeader.innerHTML = `<span class="card-icon">${cardIcon}</span><span class="card-title">${cardTitle}</span>`;
-            card.appendChild(cardHeader);
-            
-            // Create card body
-            const cardBody = document.createElement('div');
-            cardBody.className = 'ehr-card-body';
-            
-            // Sort fields by cardOrder
-            fields.sort((a, b) => (a.cardOrder || 0) - (b.cardOrder || 0));
-            
-            // Render fields within card
-            fields.forEach(field => {
-                const formGroup = this.createFormField(field);
-                cardBody.appendChild(formGroup);
-            });
-            
-            card.appendChild(cardBody);
-            this.formContainer.appendChild(card);
+        // Simple stacked layout (consistent with renderQueryParams)
+        this.currentOperation.formFields.forEach(field => {
+            const formGroup = this.createFormField(field);
+            this.formContainer.appendChild(formGroup);
         });
-    }
-
-    /**
-     * Group form fields by their card property
-     */
-    groupFieldsByCard(fields) {
-        const groups = {};
-        
-        fields.forEach(field => {
-            const cardId = field.card || 'default';
-            if (!groups[cardId]) {
-                groups[cardId] = [];
-            }
-            groups[cardId].push(field);
-        });
-        
-        return groups;
     }
 
     /**
@@ -450,16 +409,14 @@ class FHIRExplorerApp {
      */
     createFormField(field) {
         const formGroup = document.createElement('div');
-        formGroup.className = 'ehr-field';
+        formGroup.className = 'form-group';
 
         const label = document.createElement('label');
-        label.className = 'ehr-field-label';
         label.textContent = field.label;
         
         let input;
         if (field.type === 'select') {
             input = document.createElement('select');
-            input.className = 'ehr-field-input ehr-select';
             
             // Get options (handles both static and ValueSet-based)
             const options = this.getFieldOptions(field);
@@ -473,11 +430,9 @@ class FHIRExplorerApp {
         } else if (field.type === 'date') {
             input = document.createElement('input');
             input.type = 'date';
-            input.className = 'ehr-field-input';
         } else {
             input = document.createElement('input');
             input.type = 'text';
-            input.className = 'ehr-field-input';
         }
 
         input.name = field.name;
@@ -503,14 +458,18 @@ class FHIRExplorerApp {
         
         setValueByPath(this.currentBodyData, path, value);
         
-        // Update JSON editor
-        this.jsonEditor.value = JSON.stringify(this.currentBodyData, null, 2);
+        // Update JSON editor (if exists)
+        if (this.jsonEditor) {
+            this.jsonEditor.value = JSON.stringify(this.currentBodyData, null, 2);
+        }
         
         // Update diff
         this.updateDiff();
     }
 
     handleJsonEditorChange() {
+        if (!this.jsonEditor) return;
+        
         try {
             this.currentBodyData = JSON.parse(this.jsonEditor.value);
             this.updateDiff();
@@ -634,10 +593,12 @@ class FHIRExplorerApp {
         let bodyData = null;
 
         if (this.currentOperation.hasBody) {
-            try {
-                bodyData = JSON.parse(this.jsonEditor.value);
-            } catch (e) {
-                alert('Invalid JSON in request body: ' + e.message);
+            // Use currentBodyData from form updates
+            bodyData = this.currentBodyData;
+            
+            // Validate we have body data
+            if (!bodyData) {
+                alert('Request body is empty. Please fill in the form fields.');
                 this.executeBtn.disabled = false;
                 this.executeBtn.innerHTML = '<span class="btn-icon">🚀</span> Execute Request';
                 return;

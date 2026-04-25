@@ -2,6 +2,15 @@
 // Optional: Use if FHIR servers block CORS
 
 export default async function handler(req, res) {
+  // Handle CORS preflight
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   const { url } = req.query;
   
   if (!url) {
@@ -16,14 +25,10 @@ export default async function handler(req, res) {
         'Content-Type': 'application/fhir+json',
         ...req.headers
       },
-      body: req.method !== 'GET' ? req.body : undefined
+      body: req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined
     });
 
     const data = await response.text();
-    
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
-    res.setHeader('Access-Control-Allow-Headers', '*');
     
     res.status(response.status).send(data);
   } catch (error) {
