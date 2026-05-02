@@ -924,24 +924,70 @@ class WorkshopApp {
     // ============================================
 
     displayResponse(response) {
+        const isSuccess = response.success !== false;
+        const statusClass = isSuccess ? 'success' : 'error';
+        const icon = isSuccess ? '✅' : '❌';
+        const title = isSuccess ? 'Success' : 'Error';
+        
+        // Format the response data nicely
+        let responseContent = '';
+        if (response.data) {
+            if (response.data.resourceType === 'Patient') {
+                // Extract key patient info for display
+                const name = response.data.name?.[0] ? 
+                    `${response.data.name[0].given?.join(' ')} ${response.data.name[0].family}` : 
+                    'Unknown';
+                const id = response.data.id || 'N/A';
+                responseContent = `📋 Patient Created\n👤 Name: ${name}\n🆔 ID: ${id}\n\n📄 Full Response:\n${JSON.stringify(response.data, null, 2)}`;
+            } else if (response.data.resourceType === 'Bundle') {
+                const count = response.data.entry?.length || 0;
+                responseContent = `🔍 Search Results\n📊 Found: ${count} patient(s)\n\n📄 Full Response:\n${JSON.stringify(response.data, null, 2)}`;
+            } else {
+                responseContent = JSON.stringify(response.data, null, 2);
+            }
+        } else {
+            responseContent = JSON.stringify(response, null, 2);
+        }
+        
         this.responseContainer.innerHTML = `
-            <div class="response-success">
+            <div class="response-${statusClass}">
                 <div class="response-header">
-                    <span class="status-code success">${response.status || 200}</span>
+                    <span class="status-code ${statusClass}">${icon} ${response.status || (isSuccess ? 200 : 'Error')}</span>
                     <span class="response-time">${response.responseTime || '0.5s'}</span>
                 </div>
-                <pre class="response-body">${JSON.stringify(response.data || response, null, 2)}</pre>
+                <div class="response-summary">
+                    <strong>${title}</strong> - ${isSuccess ? 'Request completed successfully' : 'Request failed'}
+                </div>
+                <pre class="response-body">${responseContent}</pre>
             </div>
         `;
     }
 
     displayError(error) {
+        let errorMessage = error.message || 'Request failed';
+        let errorHelp = '';
+        
+        // Provide helpful error messages
+        if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+            errorMessage = 'Network connection failed';
+            errorHelp = '💡 Check your internet connection and try again.';
+        } else if (errorMessage.includes('CORS')) {
+            errorMessage = 'Cross-origin request blocked';
+            errorHelp = '💡 This might be a server configuration issue.';
+        } else if (errorMessage.includes('parse')) {
+            errorMessage = 'Invalid JSON in request body';
+            errorHelp = '💡 Check that your JSON is properly formatted in the Developer view.';
+        }
+        
         this.responseContainer.innerHTML = `
             <div class="response-error">
                 <div class="response-header">
-                    <span class="status-code error">Error</span>
+                    <span class="status-code error">❌ Error</span>
                 </div>
-                <div class="error-message">${error.message || 'Request failed'}</div>
+                <div class="error-message">
+                    <strong>${errorMessage}</strong>
+                    ${errorHelp ? `<div class="error-help">${errorHelp}</div>` : ''}
+                </div>
             </div>
         `;
     }
