@@ -392,6 +392,22 @@ class WorkshopApp {
     }
 
     setupParticipantView() {
+        // SAFETY CHECK: Ensure all managers are initialized
+        if (!this.syncManager) {
+            console.error('syncManager not initialized - creating now');
+            this.syncManager = new WorkshopSyncManager();
+            this.setupSync();
+        }
+        if (!this.groupStatusSync) {
+            console.error('groupStatusSync not initialized - creating now');
+            this.groupStatusSync = new GroupStatusSync();
+            this.setupGroupStatus();
+        }
+        if (!this.fhirClient) {
+            console.error('fhirClient not initialized - creating now');
+            this.fhirClient = new FHIRClient();
+        }
+        
         const caseConfig = getCaseInfo(this.state.currentCase);
         const groupConfig = getGroupInfo(this.state.currentGroup);
         const task = this.state.currentTask;
@@ -503,7 +519,11 @@ class WorkshopApp {
         const inputs = this.clinicianWorkspace.querySelectorAll('input, select');
         inputs.forEach(input => {
             input.addEventListener('input', (e) => {
-                this.syncManager.updateFromForm(e.target.name, e.target.value);
+                if (this.syncManager) {
+                    this.syncManager.updateFromForm(e.target.name, e.target.value);
+                } else {
+                    console.warn('syncManager not ready, skipping form sync');
+                }
             });
         });
         
@@ -678,6 +698,22 @@ class WorkshopApp {
     async executeTask() {
         const task = this.state.currentTask;
         const caseConfig = getCaseInfo(this.state.currentCase);
+        
+        // SAFETY CHECK: Ensure managers are initialized
+        if (!this.groupStatusSync) {
+            console.error('groupStatusSync not initialized - creating now');
+            this.groupStatusSync = new GroupStatusSync();
+            this.setupGroupStatus();
+        }
+        if (!this.fhirClient) {
+            console.error('fhirClient not initialized - creating now');
+            this.fhirClient = new FHIRClient();
+        }
+        if (!this.syncManager) {
+            console.error('syncManager not initialized - creating now');
+            this.syncManager = new WorkshopSyncManager();
+            this.setupSync();
+        }
         
         // Update status
         this.groupStatusSync.updateMyStatus(
