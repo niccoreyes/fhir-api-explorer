@@ -546,17 +546,32 @@ class WorkshopApp {
         
         dashboard.innerHTML = '';
         
-        // Create cards for each group
+        // Create cards for each group with enhanced layout
         Object.values(WORKSHOP_CONFIG.groups).forEach(group => {
             const card = document.createElement('div');
             card.className = 'dashboard-card';
+            card.style.borderLeft = `4px solid ${group.color}`;
             card.innerHTML = `
                 <div class="dashboard-card-header">
-                    <span class="dashboard-card-indicator">${group.indicator}</span>
-                    <h4>${group.name}</h4>
+                    <span class="dashboard-card-indicator" style="color: ${group.color}">${group.indicator}</span>
+                    <div class="dashboard-card-title">
+                        <h4>${group.name}</h4>
+                        <span class="dashboard-role" id="group-role-${group.id}">Not assigned</span>
+                    </div>
                 </div>
                 <div class="dashboard-status waiting" id="group-status-${group.id}">
-                    Waiting to start...
+                    <span class="status-icon">⏳</span>
+                    <span class="status-text">Waiting</span>
+                </div>
+                <div class="dashboard-stats" id="group-stats-${group.id}">
+                    <div class="stat">
+                        <span class="stat-value" id="patient-count-${group.id}">0</span>
+                        <span class="stat-label">Patients</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="search-count-${group.id}">0</span>
+                        <span class="stat-label">Searches</span>
+                    </div>
                 </div>
                 <div class="dashboard-details" id="group-details-${group.id}">
                     No activity yet
@@ -564,6 +579,33 @@ class WorkshopApp {
             `;
             dashboard.appendChild(card);
         });
+        
+        // Add summary statistics at the top
+        this.updateFacilitatorStats();
+    }
+    
+    updateFacilitatorStats() {
+        // Update the main stats counters
+        const totalPatients = document.getElementById('totalPatients');
+        const totalSearches = document.getElementById('totalSearches');
+        const activeGroups = document.getElementById('activeGroups');
+        
+        if (totalPatients && totalSearches && activeGroups) {
+            const status = this.groupStatusSync.getAllStatus();
+            let patientTotal = 0;
+            let searchTotal = 0;
+            let activeCount = 0;
+            
+            Object.values(status).forEach(groupStatus => {
+                if (groupStatus.patientCount) patientTotal += groupStatus.patientCount;
+                if (groupStatus.searchCount) searchTotal += groupStatus.searchCount;
+                if (groupStatus.status !== 'waiting') activeCount++;
+            });
+            
+            totalPatients.textContent = patientTotal;
+            totalSearches.textContent = searchTotal;
+            activeGroups.textContent = activeCount;
+        }
     }
 
     // ============================================
@@ -648,16 +690,37 @@ class WorkshopApp {
             Object.entries(status).forEach(([groupId, groupStatus]) => {
                 const statusEl = document.getElementById(`group-status-${groupId}`);
                 const detailsEl = document.getElementById(`group-details-${groupId}`);
+                const roleEl = document.getElementById(`group-role-${groupId}`);
+                const patientCountEl = document.getElementById(`patient-count-${groupId}`);
+                const searchCountEl = document.getElementById(`search-count-${groupId}`);
                 
                 if (statusEl) {
                     statusEl.className = 'dashboard-status ' + groupStatus.status;
-                    statusEl.textContent = groupStatus.status.toUpperCase();
+                    const icon = groupStatus.status === 'complete' ? '✅' : 
+                                groupStatus.status === 'active' ? '🔄' : '⏳';
+                    statusEl.innerHTML = `<span class="status-icon">${icon}</span><span class="status-text">${groupStatus.status.toUpperCase()}</span>`;
                 }
                 
                 if (detailsEl) {
-                    detailsEl.textContent = `${groupStatus.taskType || 'No task'} | ${groupStatus.caseId || 'No case'}`;
+                    const time = groupStatus.timestamp ? new Date(groupStatus.timestamp).toLocaleTimeString() : '';
+                    detailsEl.textContent = `${groupStatus.taskType || 'No task'} | ${groupStatus.caseId || 'No case'} ${time}`;
+                }
+                
+                if (roleEl && groupStatus.taskType) {
+                    roleEl.textContent = groupStatus.taskType === 'create' ? 'RHU (Create)' : 'Hospital (Search)';
+                }
+                
+                if (patientCountEl && groupStatus.patientCount !== undefined) {
+                    patientCountEl.textContent = groupStatus.patientCount;
+                }
+                
+                if (searchCountEl && groupStatus.searchCount !== undefined) {
+                    searchCountEl.textContent = groupStatus.searchCount;
                 }
             });
+            
+            // Update overall stats
+            this.updateFacilitatorStats();
         }
     }
 
