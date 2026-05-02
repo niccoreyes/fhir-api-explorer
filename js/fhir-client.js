@@ -268,10 +268,13 @@ class FHIRClient {
     async createPatient(patientData) {
         const url = `${this.servers.cdr}/Patient`;
         
+        // Ensure patientData is an object, not already stringified
+        const body = typeof patientData === 'string' ? patientData : JSON.stringify(patientData);
+        
         const response = await fetch(url, {
             method: 'POST',
             headers: this.defaultHeaders,
-            body: JSON.stringify(patientData)
+            body: body
         });
         
         const data = await response.json();

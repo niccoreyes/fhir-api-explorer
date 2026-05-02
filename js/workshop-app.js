@@ -713,8 +713,8 @@ class WorkshopApp {
             let response;
             
             if (task.type === 'create') {
-                // Create patient
-                const body = this.syncManager.getState().jsonBody;
+                // Create patient - get the raw object, not the stringified version
+                const body = this.syncManager.state.jsonBody;
                 response = await this.fhirClient.createPatient(body);
             } else {
                 // Search patient
