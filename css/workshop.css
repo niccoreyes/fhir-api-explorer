@@ -1,5 +1,5 @@
 /* ============================================
-   FAHLA 2026 Workshop Platform - Modern Clinical UI
+   Aklan FHIR Fundamentals Training 2026 - Professional Light Mode UI
    ============================================ */
 
 :root {
@@ -562,16 +562,17 @@ body {
     flex-direction: column;
 }
 
-/* Header */
+/* Header - Light Professional Design */
 .workshop-header {
-    background: linear-gradient(135deg, var(--bg-dark) 0%, #1e293b 100%);
-    color: var(--text-light);
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    color: var(--text-primary);
     padding: var(--space-md) var(--space-lg);
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: var(--space-lg);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-md);
+    border-bottom: 1px solid #e2e8f0;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -595,7 +596,8 @@ body {
 
 .workshop-phase {
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: var(--primary-600);
+    font-weight: 600;
 }
 
 .header-center {
@@ -605,10 +607,11 @@ body {
 
 .view-tabs {
     display: flex;
-    background: rgba(255,255,255,0.1);
+    background: #f1f5f9;
     border-radius: var(--radius-md);
     padding: var(--space-xs);
     gap: var(--space-xs);
+    border: 1px solid #e2e8f0;
 }
 
 .view-tab {
@@ -619,7 +622,7 @@ body {
     background: transparent;
     border: none;
     border-radius: var(--radius-sm);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
@@ -627,13 +630,14 @@ body {
 }
 
 .view-tab:hover {
-    color: var(--text-light);
-    background: rgba(255,255,255,0.1);
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.8);
 }
 
 .view-tab.active {
     background: var(--primary-500);
     color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .tab-icon {
@@ -651,8 +655,9 @@ body {
     align-items: center;
     gap: var(--space-sm);
     padding: var(--space-sm) var(--space-md);
-    background: rgba(255,255,255,0.1);
+    background: #f1f5f9;
     border-radius: var(--radius-md);
+    border: 1px solid #e2e8f0;
 }
 
 .group-indicator {
@@ -667,24 +672,25 @@ body {
 .group-name {
     font-size: 0.875rem;
     font-weight: 600;
+    color: var(--text-primary);
 }
 
 .task-name {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 
 .reset-btn {
     padding: var(--space-sm);
-    background: rgba(255,255,255,0.1);
-    border: none;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: background var(--transition-fast);
+    transition: all var(--transition-fast);
 }
 
 .reset-btn:hover {
-    background: rgba(255,255,255,0.2);
+    background: #e2e8f0;
 }
 
 /* Main Layout */
@@ -1315,17 +1321,19 @@ body {
     margin-bottom: var(--space-md);
 }
 
-/* Mobile Navigation */
+/* Mobile Navigation - Light Mode */
 .mobile-nav {
     display: none;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--bg-dark);
+    background: #ffffff;
     padding: var(--space-sm);
     justify-content: space-around;
     z-index: 100;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
 }
 
 .mobile-nav-btn {
@@ -1336,10 +1344,10 @@ body {
     padding: var(--space-sm);
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 1.5rem;
     cursor: pointer;
-    transition: color var(--transition-fast);
+    transition: all var(--transition-fast);
 }
 
 .mobile-nav-btn small {
@@ -1348,16 +1356,19 @@ body {
 }
 
 .mobile-nav-btn.active {
-    color: var(--primary-500);
+    color: var(--primary-600);
+    background: var(--primary-50);
+    border-radius: var(--radius-md);
 }
 
-/* Footer */
+/* Footer - Light Mode */
 .workshop-footer {
-    background: var(--bg-dark);
-    color: var(--text-muted);
+    background: #f8fafc;
+    color: var(--text-secondary);
     padding: var(--space-md);
     text-align: center;
     font-size: 0.8rem;
+    border-top: 1px solid #e2e8f0;
 }
 
 .workshop-footer p {
@@ -1365,7 +1376,8 @@ body {
 }
 
 .disclaimer {
-    opacity: 0.7;
+    color: var(--text-muted);
+    font-size: 0.75rem;
 }
 
 /* ============================================

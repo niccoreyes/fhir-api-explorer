@@ -261,7 +261,6 @@ class FHIRClient {
             }
         };
     }
-}
 
     /**
      * Workshop-specific: Create a patient

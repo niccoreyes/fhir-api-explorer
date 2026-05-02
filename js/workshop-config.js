@@ -4,7 +4,7 @@
 
 const WORKSHOP_CONFIG = {
     version: '1.0.0',
-    name: 'FAHLA 2026 - FHIR Interoperability Workshop',
+    name: 'Aklan FHIR Fundamentals Training 2026',
     
     // Case configurations
     cases: {
