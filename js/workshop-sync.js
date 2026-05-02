@@ -382,8 +382,6 @@ class WorkshopSyncManager {
 
 class GroupStatusSync {
     constructor() {
-        this.websocket = null;
-        this.websocketAvailable = false;
         this.pollingInterval = null;
         this.groupStatus = new Map();
         this.subscribers = [];
@@ -392,59 +390,10 @@ class GroupStatusSync {
     }
 
     async init() {
-        // Try WebSocket first
-        await this.testWebSocket();
-        
-        // Fallback to polling if WebSocket not available
-        if (!this.websocketAvailable) {
-            this.startPolling();
-        }
-    }
-
-    async testWebSocket() {
-        try {
-            // Test if WebSocket is available
-            const wsUrl = WORKSHOP_CONFIG.sync.websocketTestUrl;
-            if (!wsUrl) {
-                console.log('WebSocket URL not configured, using polling');
-                return false;
-            }
-
-            // Attempt connection (will likely fail on FHIR servers without WS support)
-            this.websocket = new WebSocket(wsUrl);
-            
-            return new Promise((resolve) => {
-                this.websocket.onopen = () => {
-                    console.log('WebSocket connected');
-                    this.websocketAvailable = true;
-                    resolve(true);
-                };
-
-                this.websocket.onerror = () => {
-                    console.log('WebSocket not available, using polling fallback');
-                    this.websocketAvailable = false;
-                    resolve(false);
-                };
-
-                this.websocket.onclose = () => {
-                    if (this.websocketAvailable) {
-                        console.log('WebSocket closed, falling back to polling');
-                        this.websocketAvailable = false;
-                        this.startPolling();
-                    }
-                };
-
-                // Timeout after 3 seconds
-                setTimeout(() => {
-                    if (!this.websocketAvailable) {
-                        resolve(false);
-                    }
-                }, 3000);
-            });
-        } catch (error) {
-            console.log('WebSocket test failed:', error);
-            return false;
-        }
+        // Start polling-based sync immediately
+        // WebSocket removed - FHIRLab doesn't support it
+        console.log('Starting polling-based group sync');
+        this.startPolling();
     }
 
     startPolling() {
@@ -533,14 +482,6 @@ class GroupStatusSync {
         
         // Notify immediately
         this.notifySubscribers();
-        
-        // Send via WebSocket if available
-        if (this.websocketAvailable && this.websocket) {
-            this.websocket.send(JSON.stringify({
-                type: 'status_update',
-                data: myStatus
-            }));
-        }
     }
 
     subscribe(callback) {
@@ -575,9 +516,6 @@ class GroupStatusSync {
     destroy() {
         if (this.pollingInterval) {
             clearInterval(this.pollingInterval);
-        }
-        if (this.websocket) {
-            this.websocket.close();
         }
     }
 }
