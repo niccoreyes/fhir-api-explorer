@@ -1,4 +1,378 @@
 // ============================================
+// Workshop Sync Manager - Bidirectional Form/JSON Sync
+// ============================================
+
+class WorkshopSyncManager {
+    constructor() {
+        // State store - single source of truth
+        this.state = {
+            formData: {},
+            jsonBody: null,
+            operation: null,
+            lastSync: {
+                formToJson: null,
+                jsonToForm: null
+            },
+            syncStatus: 'synced', // 'synced', 'syncing', 'error'
+            validationErrors: []
+        };
+
+        // Subscribers for view updates
+        this.subscribers = {
+            clinician: [],
+            developer: []
+        };
+
+        // Debounce timer for form changes
+        this.debounceTimer = null;
+        this.debounceTime = 300;
+
+        // Bind methods
+        this.updateFromForm = this.updateFromForm.bind(this);
+        this.updateFromJson = this.updateFromJson.bind(this);
+        this.notifySubscribers = this.notifySubscribers.bind(this);
+    }
+
+    /**
+     * Initialize sync with initial data
+     */
+    init(initialData = {}) {
+        this.state.formData = { ...initialData };
+        this.state.jsonBody = this.buildFHIRJson(initialData);
+        this.state.syncStatus = 'synced';
+        this.notifySubscribers('both');
+    }
+
+    /**
+     * Subscribe to sync updates
+     * @param {string} view - 'clinician' or 'developer'
+     * @param {function} callback - function(data) to call on update
+     */
+    subscribe(view, callback) {
+        if (this.subscribers[view]) {
+            this.subscribers[view].push(callback);
+        }
+    }
+
+    /**
+     * Unsubscribe from sync updates
+     */
+    unsubscribe(view, callback) {
+        if (this.subscribers[view]) {
+            this.subscribers[view] = this.subscribers[view].filter(
+                cb => cb !== callback
+            );
+        }
+    }
+
+    /**
+     * Update from clinician form (with debouncing)
+     * @param {string} fieldName - name of the field that changed
+     * @param {any} value - new value
+     */
+    updateFromForm(fieldName, value) {
+        // Update form data immediately
+        this.state.formData[fieldName] = value;
+        this.state.syncStatus = 'syncing';
+        
+        // Clear existing timer
+        if (this.debounceTimer) {
+            clearTimeout(this.debounceTimer);
+        }
+
+        // Debounce the JSON update
+        this.debounceTimer = setTimeout(() => {
+            this.performFormToJsonSync();
+        }, this.debounceTime);
+
+        // Notify immediate update for UI responsiveness
+        this.notifySubscribers('clinician');
+    }
+
+    /**
+     * Update from developer JSON editor
+     * @param {string} jsonString - JSON string from editor
+     */
+    updateFromJson(jsonString) {
+        try {
+            // Validate JSON
+            const parsed = JSON.parse(jsonString);
+            
+            // Validate FHIR structure
+            const validation = this.validateFHIRResource(parsed);
+            
+            if (validation.valid) {
+                // Update state
+                this.state.jsonBody = parsed;
+                this.state.formData = this.extractFormData(parsed);
+                this.state.syncStatus = 'synced';
+                this.state.validationErrors = [];
+                this.state.lastSync.jsonToForm = new Date();
+                
+                // Notify both views
+                this.notifySubscribers('both');
+                
+                return { success: true };
+            } else {
+                // Validation failed - don't sync but show errors
+                this.state.syncStatus = 'error';
+                this.state.validationErrors = validation.errors;
+                this.notifySubscribers('developer');
+                
+                return { 
+                    success: false, 
+                    errors: validation.errors 
+                };
+            }
+        } catch (parseError) {
+            // JSON parse error
+            this.state.syncStatus = 'error';
+            this.state.validationErrors = ['Invalid JSON: ' + parseError.message];
+            this.notifySubscribers('developer');
+            
+            return { 
+                success: false, 
+                errors: ['Invalid JSON syntax'] 
+            };
+        }
+    }
+
+    /**
+     * Get current state
+     */
+    getState() {
+        return {
+            formData: { ...this.state.formData },
+            jsonBody: this.state.jsonBody ? JSON.stringify(this.state.jsonBody, null, 2) : '',
+            syncStatus: this.state.syncStatus,
+            validationErrors: [...this.state.validationErrors],
+            lastSync: { ...this.state.lastSync }
+        };
+    }
+
+    /**
+     * Force a sync refresh
+     */
+    refresh() {
+        this.notifySubscribers('both');
+    }
+
+    // ============================================
+    // PRIVATE METHODS
+    // ============================================
+
+    /**
+     * Perform the actual form to JSON sync
+     */
+    performFormToJsonSync() {
+        const newJsonBody = this.buildFHIRJson(this.state.formData);
+        
+        this.state.jsonBody = newJsonBody;
+        this.state.syncStatus = 'synced';
+        this.state.lastSync.formToJson = new Date();
+        this.state.validationErrors = [];
+        
+        this.notifySubscribers('developer');
+    }
+
+    /**
+     * Build FHIR JSON from form data
+     */
+    buildFHIRJson(formData) {
+        // Default Patient resource structure
+        const resource = {
+            resourceType: 'Patient',
+            meta: {
+                tag: [{
+                    system: 'http://fahla.workshop/2026',
+                    code: 'workshop-demo',
+                    display: 'FAHLA Workshop Demo'
+                }]
+            }
+        };
+
+        // Add identifier if provided
+        if (formData.identifier) {
+            resource.identifier = [{
+                use: 'official',
+                value: formData.identifier,
+                system: 'http://fahla.workshop/patient-id'
+            }];
+        }
+
+        // Add name
+        if (formData.familyName || formData.givenName) {
+            resource.name = [{
+                use: 'official'
+            }];
+            
+            if (formData.familyName) {
+                resource.name[0].family = formData.familyName;
+            }
+            
+            if (formData.givenName) {
+                resource.name[0].given = formData.givenName.split(' ');
+            }
+        }
+
+        // Add gender
+        if (formData.gender) {
+            resource.gender = formData.gender;
+        }
+
+        // Add birthDate
+        if (formData.birthDate) {
+            resource.birthDate = formData.birthDate;
+        }
+
+        // Add phone
+        if (formData.phone) {
+            resource.telecom = [{
+                system: 'phone',
+                value: formData.phone,
+                use: 'mobile'
+            }];
+        }
+
+        // Add address
+        if (formData.address) {
+            resource.address = [{
+                use: 'home',
+                text: formData.address
+            }];
+        }
+
+        return resource;
+    }
+
+    /**
+     * Extract form data from FHIR JSON
+     */
+    extractFormData(jsonBody) {
+        const formData = {};
+
+        // Extract identifier
+        if (jsonBody.identifier && jsonBody.identifier.length > 0) {
+            formData.identifier = jsonBody.identifier[0].value;
+        }
+
+        // Extract name
+        if (jsonBody.name && jsonBody.name.length > 0) {
+            const name = jsonBody.name[0];
+            if (name.family) {
+                formData.familyName = name.family;
+            }
+            if (name.given && name.given.length > 0) {
+                formData.givenName = name.given.join(' ');
+            }
+        }
+
+        // Extract gender
+        if (jsonBody.gender) {
+            formData.gender = jsonBody.gender;
+        }
+
+        // Extract birthDate
+        if (jsonBody.birthDate) {
+            formData.birthDate = jsonBody.birthDate;
+        }
+
+        // Extract phone
+        if (jsonBody.telecom && jsonBody.telecom.length > 0) {
+            const phone = jsonBody.telecom.find(t => t.system === 'phone');
+            if (phone) {
+                formData.phone = phone.value;
+            }
+        }
+
+        // Extract address
+        if (jsonBody.address && jsonBody.address.length > 0) {
+            formData.address = jsonBody.address[0].text || '';
+        }
+
+        return formData;
+    }
+
+    /**
+     * Validate FHIR resource structure
+     */
+    validateFHIRResource(resource) {
+        const errors = [];
+
+        // Check resourceType
+        if (!resource.resourceType) {
+            errors.push('Missing required field: resourceType');
+        } else if (resource.resourceType !== 'Patient') {
+            errors.push(`Unexpected resourceType: ${resource.resourceType}. Expected: Patient`);
+        }
+
+        // Check name structure if present
+        if (resource.name) {
+            if (!Array.isArray(resource.name)) {
+                errors.push('name must be an array');
+            } else {
+                resource.name.forEach((name, index) => {
+                    if (name.family && typeof name.family !== 'string') {
+                        errors.push(`name[${index}].family must be a string`);
+                    }
+                    if (name.given && !Array.isArray(name.given)) {
+                        errors.push(`name[${index}].given must be an array`);
+                    }
+                });
+            }
+        }
+
+        // Check gender if present
+        if (resource.gender) {
+            const validGenders = ['male', 'female', 'other', 'unknown'];
+            if (!validGenders.includes(resource.gender)) {
+                errors.push(`Invalid gender: ${resource.gender}. Must be one of: ${validGenders.join(', ')}`);
+            }
+        }
+
+        // Check birthDate format if present
+        if (resource.birthDate) {
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            if (!dateRegex.test(resource.birthDate)) {
+                errors.push('birthDate must be in format YYYY-MM-DD');
+            }
+        }
+
+        return {
+            valid: errors.length === 0,
+            errors: errors
+        };
+    }
+
+    /**
+     * Notify subscribers of changes
+     */
+    notifySubscribers(view) {
+        const state = this.getState();
+
+        if (view === 'clinician' || view === 'both') {
+            this.subscribers.clinician.forEach(callback => {
+                try {
+                    callback(state);
+                } catch (error) {
+                    console.error('Error notifying clinician subscriber:', error);
+                }
+            });
+        }
+
+        if (view === 'developer' || view === 'both') {
+            this.subscribers.developer.forEach(callback => {
+                try {
+                    callback(state);
+                } catch (error) {
+                    console.error('Error notifying developer subscriber:', error);
+                }
+            });
+        }
+    }
+}
+
+// ============================================
 // Group Status Sync - Server-side using FHIR
 // ============================================
 
