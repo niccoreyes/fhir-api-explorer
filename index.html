@@ -3,230 +3,413 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FHIR API Explorer - FAHLA 2026</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <title>FAHLA 2026 - FHIR Workshop Platform</title>
+    <link rel="stylesheet" href="css/workshop.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
+    <!-- Workshop Entry Gate -->
+    <div id="entryGate" class="entry-gate">
+        <div class="entry-container">
+            <header class="entry-header">
+                <div class="logo-section">
+                    <span class="logo">🏥</span>
+                    <h1>FAHLA 2026</h1>
+                </div>
+                <p class="subtitle">FHIR Interoperability Workshop</p>
+            </header>
+
+            <!-- Case Selection -->
+            <div id="caseSelection" class="selection-section">
+                <h2>Choose Your Learning Scenario</h2>
+                <p class="selection-desc">Compare both cases to understand why Master Patient Index (MPI) matters</p>
+                
+                <div class="cases-grid">
+                    <!-- Case 1: Unique Name -->
+                    <div class="case-card" data-case="case1">
+                        <div class="case-header case1-header">
+                            <span class="case-badge">CASE 1</span>
+                            <h3>Unique Name Success</h3>
+                        </div>
+                        <div class="case-body">
+                            <div class="patient-preview">
+                                <span class="patient-icon">👤</span>
+                                <div class="patient-info">
+                                    <strong>Rico Dela Cruz</strong>
+                                    <span class="patient-id">Unique ID</span>
+                                </div>
+                            </div>
+                            <div class="case-outcomes">
+                                <div class="outcome success">
+                                    <span class="icon">✅</span>
+                                    <span>Easy to search</span>
+                                </div>
+                                <div class="outcome success">
+                                    <span class="icon">✅</span>
+                                    <span>Quick match</span>
+                                </div>
+                                <div class="outcome success">
+                                    <span class="icon">✅</span>
+                                    <span>Single result</span>
+                                </div>
+                            </div>
+                            <div class="case-learning">
+                                <strong>Learning:</strong> Basic FHIR exchange works smoothly when names are unique
+                            </div>
+                        </div>
+                        <button class="select-case-btn" data-case="case1">
+                            Select Case 1 →
+                        </button>
+                    </div>
+
+                    <!-- Case 2: Common Name -->
+                    <div class="case-card" data-case="case2">
+                        <div class="case-header case2-header">
+                            <span class="case-badge">CASE 2</span>
+                            <h3>Common Name Challenge</h3>
+                        </div>
+                        <div class="case-body">
+                            <div class="patient-preview">
+                                <span class="patient-icon">👤</span>
+                                <div class="patient-info">
+                                    <strong>Jose Dimasalang</strong>
+                                    <span class="patient-id">Common Name</span>
+                                </div>
+                            </div>
+                            <div class="case-outcomes">
+                                <div class="outcome warning">
+                                    <span class="icon">⚠️</span>
+                                    <span>Multiple matches</span>
+                                </div>
+                                <div class="outcome error">
+                                    <span class="icon">❌</span>
+                                    <span>Wrong patient risk</span>
+                                </div>
+                                <div class="outcome solution">
+                                    <span class="icon">💡</span>
+                                    <span>Need National ID</span>
+                                </div>
+                            </div>
+                            <div class="case-learning">
+                                <strong>Learning:</strong> Why MPI and Patient Registry are critical for common names
+                            </div>
+                        </div>
+                        <button class="select-case-btn" data-case="case2">
+                            Select Case 2 →
+                        </button>
+                    </div>
+                </div>
+
+                <div class="compare-tip">
+                    💡 <strong>Tip:</strong> Try both cases to fully understand the MPI challenge!
+                </div>
+            </div>
+
+            <!-- Group Selection (shown after case selection) -->
+            <div id="groupSelection" class="selection-section" style="display: none;">
+                <div class="back-btn" id="backToCases">← Back to Cases</div>
+                
+                <h2 id="groupSelectionTitle">Case 1: Select Your Group</h2>
+                <p class="selection-desc" id="groupSelectionDesc">Choose your role in this interoperability scenario</p>
+
+                <div class="groups-container" id="groupsContainer">
+                    <!-- Groups will be populated by JS based on case -->
+                </div>
+
+                <div class="facilitator-option">
+                    <button class="facilitator-btn" id="selectFacilitator">
+                        🎯 View Facilitator Dashboard
+                    </button>
+                    <p class="facilitator-note">See all groups and system architecture</p>
+                </div>
+            </div>
+
+            <!-- View Mode Selection (shown after group selection) -->
+            <div id="viewSelection" class="selection-section" style="display: none;">
+                <div class="back-btn" id="backToGroups">← Back to Groups</div>
+                
+                <div class="selection-summary">
+                    <div class="summary-card">
+                        <span class="summary-case" id="summaryCase">Case 1</span>
+                        <span class="summary-group" id="summaryGroup">Group 1</span>
+                        <span class="summary-task" id="summaryTask">Create Patient</span>
+                    </div>
+                </div>
+
+                <h2>Choose Your View Mode</h2>
+                <p class="selection-desc">Switch anytime during the workshop</p>
+
+                <div class="view-modes">
+                    <button class="view-mode-btn" data-mode="clinician">
+                        <span class="mode-icon">👤</span>
+                        <span class="mode-name">Clinician</span>
+                        <span class="mode-desc">Forms, patient records, EHR-style</span>
+                    </button>
+                    
+                    <button class="view-mode-btn" data-mode="developer">
+                        <span class="mode-icon">💻</span>
+                        <span class="mode-name">Developer</span>
+                        <span class="mode-desc">FHIR API, JSON, technical details</span>
+                    </button>
+                    
+                    <button class="view-mode-btn" data-mode="facilitator">
+                        <span class="mode-icon">🎯</span>
+                        <span class="mode-name">Facilitator</span>
+                        <span class="mode-desc">All groups, architecture, overview</span>
+                    </button>
+                </div>
+
+                <button class="enter-workshop-btn" id="enterWorkshop" disabled>
+                    Enter Workshop →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workshop App (hidden initially) -->
+    <div id="workshopApp" class="workshop-app" style="display: none;">
+        <!-- App Header -->
+        <header class="workshop-header">
             <div class="header-left">
                 <span class="logo">🏥</span>
-                <h1>FHIR API Explorer <span class="version">v1.0</span></h1>
+                <div class="workshop-title">
+                    <h1>FAHLA 2026</h1>
+                    <span class="workshop-phase" id="workshopPhase">Case 1: Unique Patient</span>
+                </div>
             </div>
+            
+            <div class="header-center">
+                <div class="view-tabs">
+                    <button class="view-tab active" data-view="clinician">
+                        <span class="tab-icon">👤</span>
+                        <span class="tab-label">Clinician</span>
+                    </button>
+                    <button class="view-tab" data-view="developer">
+                        <span class="tab-icon">💻</span>
+                        <span class="tab-label">Developer</span>
+                    </button>
+                    <button class="view-tab" data-view="architecture">
+                        <span class="tab-icon">🏗️</span>
+                        <span class="tab-label">Architecture</span>
+                    </button>
+                    <button class="view-tab" data-view="facilitator">
+                        <span class="tab-icon">🎯</span>
+                        <span class="tab-label">Facilitator</span>
+                    </button>
+                </div>
+            </div>
+
             <div class="header-right">
-                <label class="view-toggle">
-                    <span>Clinician</span>
-                    <input type="checkbox" id="viewToggle">
-                    <span class="slider"></span>
-                    <span>Developer</span>
-                </label>
+                <div class="group-badge" id="groupBadge">
+                    <span class="group-indicator" id="groupIndicator">🔷</span>
+                    <span class="group-info">
+                        <span class="group-name" id="groupName">Group 1</span>
+                        <span class="task-name" id="taskName">Create Patient</span>
+                    </span>
+                </div>
+                <button class="reset-btn" id="resetWorkshop" title="Change case/group">🔄</button>
             </div>
         </header>
 
         <!-- Main Content -->
-        <div class="main-content">
-            <!-- Sidebar -->
-            <aside class="sidebar">
+        <main class="workshop-main">
+            <!-- Left Sidebar: Operations & Tasks -->
+            <aside class="workshop-sidebar">
                 <div class="sidebar-section">
-                    <h3>📋 FHIR Operations</h3>
-                    <p class="server-info">CDR: cdr.fhirlab.net/fhir</p>
-                    
-                    <!-- Primary Operations -->
-                    <div class="operations-list" id="operationsListPrimary">
-                        <!-- Primary operations will be populated by JS -->
+                    <h3>📋 Your Task</h3>
+                    <div class="task-card" id="taskCard">
+                        <div class="task-status" id="taskStatus">⏳ Pending</div>
+                        <h4 id="taskTitle">Create Patient</h4>
+                        <p id="taskDescription">Create "Rico Dela Cruz" in the FHIRLab SHR</p>
+                        <div class="task-progress">
+                            <div class="progress-bar" id="taskProgressBar">
+                                <div class="progress-fill" id="taskProgressFill" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-text" id="taskProgressText">0%</span>
+                        </div>
                     </div>
-                    
-                    <!-- Secondary Operations -->
-                    <div class="operations-section-divider">Additional Scenarios</div>
-                    <div class="operations-list" id="operationsListSecondary">
-                        <!-- Secondary operations will be populated by JS -->
-                    </div>
-                    
-                    <!-- Advanced/Diagnostics (Collapsible) -->
-                    <div class="operations-advanced-toggle" id="advancedToggle">
-                        <span class="toggle-icon">▼</span>
-                        <span>Advanced / Diagnostics</span>
-                    </div>
-                    <div class="operations-list operations-advanced" id="operationsListAdvanced" style="display: none;">
-                        <!-- Advanced operations will be populated by JS -->
+                </div>
+
+                <div class="sidebar-section" id="groupStatusSection">
+                    <h3>👥 Other Groups</h3>
+                    <div class="group-status-list" id="groupStatusList">
+                        <!-- Populated by JS -->
                     </div>
                 </div>
 
                 <div class="sidebar-section">
-                    <h3>📚 Terminology</h3>
-                    <p class="server-info">TX: tx.fhirlab.net/fhir</p>
-                    <div class="terminology-list">
-                        <button class="operation-btn" data-op="valueset-search">
-                            🔍 Search ValueSets
+                    <h3>📚 Learning</h3>
+                    <div class="learning-links">
+                        <button class="learning-btn" id="showTerminology">
+                            📖 Terminology Mapping
                         </button>
-                        <button class="operation-btn" data-op="valueset-expand">
-                            📖 Expand ValueSet
+                        <button class="learning-btn" id="showMPI">
+                            🔍 MPI & Patient Registry
                         </button>
-                        <button class="operation-btn" data-op="code-lookup">
-                            🔎 Lookup Code
+                        <button class="learning-btn" id="showArchitecture">
+                            🏗️ System Architecture
                         </button>
                     </div>
                 </div>
             </aside>
 
-            <!-- Main Panel -->
-            <main class="main-panel">
-                <!-- Operation Header -->
-                <div class="operation-header">
-                    <h2 id="currentOperationTitle">Server CapabilityStatement</h2>
-                    <p id="currentOperationDesc">Discover what this FHIR server can do</p>
-                    <button class="teach-btn" id="teachBtn" title="Teaching Moment">ℹ️ Learn More</button>
-                </div>
-
-                <!-- Teaching Moment Panel (collapsible) -->
-                <div class="teaching-panel" id="teachingPanel" style="display: none;">
-                    <div class="teaching-content" id="teachingContent">
-                        <!-- Teaching content populated by JS -->
+            <!-- Center Panel: Work Area -->
+            <div class="workshop-center">
+                <!-- View: Clinician -->
+                <div id="clinicianView" class="workshop-view active">
+                    <div class="view-header">
+                        <h2>👤 Clinician View</h2>
+                        <p>Fill out the patient information form</p>
+                    </div>
+                    <div class="clinician-workspace" id="clinicianWorkspace">
+                        <!-- Form will be populated here -->
                     </div>
                 </div>
 
-                <!-- Request Section -->
-                <div class="request-section">
-                    <div class="section-header">
-                        <span class="method-badge" id="methodBadge">GET</span>
-                        <span class="endpoint-url" id="endpointUrl">/metadata</span>
-                    </div>
-
-                    <!-- Clinician View -->
-                    <div class="clinician-view" id="clinicianView">
-                        <div class="form-container" id="formContainer">
-                            <!-- Dynamic form fields will be populated here -->
+                <!-- View: Developer -->
+                <div id="developerView" class="workshop-view">
+                    <div class="view-header">
+                        <h2>💻 Developer View</h2>
+                        <p>Edit the FHIR API request directly</p>
+                        <div class="sync-status" id="syncStatus">
+                            <span class="sync-indicator synced">●</span>
+                            <span class="sync-text">Synced with form</span>
                         </div>
                     </div>
-
-                    <!-- Developer View -->
-                    <div class="developer-view" id="developerView" style="display: none;">
-                        <!-- URL Bar -->
-                        <div class="dev-url-bar">
-                            <select class="dev-method-select" id="devMethodSelect">
-                                <option value="GET" style="color: #28a745;">GET</option>
-                                <option value="POST" style="color: #f0ad4e;">POST</option>
-                                <option value="PUT" style="color: #0066cc;">PUT</option>
-                                <option value="DELETE" style="color: #dc3545;">DELETE</option>
-                                <option value="PATCH" style="color: #6f42c1;">PATCH</option>
+                    <div class="developer-workspace" id="developerWorkspace">
+                        <div class="dev-toolbar">
+                            <select id="devMethod" class="dev-method">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="DELETE">DELETE</option>
                             </select>
-                            <div class="dev-url-input-container">
-                                <span class="dev-base-url" id="devBaseUrl">https://cdr.fhirlab.net/fhir</span>
-                                <input type="text" class="dev-url-input" id="devUrlInput" placeholder="/Patient?name=..." spellcheck="false">
+                            <input type="text" id="devUrl" class="dev-url" placeholder="/Patient...">
+                            <button id="devSend" class="dev-send">🚀 Send</button>
+                        </div>
+                        <div class="dev-editor-container">
+                            <label>Request Body (JSON)</label>
+                            <textarea id="devBodyEditor" class="dev-body-editor" spellcheck="false"></textarea>
+                            <div class="sync-hint">
+                                <span class="hint-icon">💡</span>
+                                <span>Changes here sync back to the form</span>
                             </div>
-                            <button class="dev-send-btn" id="devSendBtn">🚀 Send</button>
-                        </div>
-                        
-                        <!-- Tabs -->
-                        <div class="dev-tabs">
-                            <button class="dev-tab active" data-tab="params">📄 Params</button>
-                            <button class="dev-tab" data-tab="headers">📋 Headers</button>
-                            <button class="dev-tab" data-tab="body">🔧 Body</button>
-                        </div>
-                        
-                        <!-- Params Panel -->
-                        <div class="dev-panel active" id="devParamsPanel">
-                            <table class="dev-params-table">
-                                <thead>
-                                    <tr>
-                                        <th width="40">☑</th>
-                                        <th>Key</th>
-                                        <th>Value</th>
-                                        <th width="40"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="devParamsTableBody">
-                                    <!-- Dynamic rows -->
-                                </tbody>
-                            </table>
-                            <button class="dev-add-btn" id="devAddParamBtn">+ Add Parameter</button>
-                        </div>
-                        
-                        <!-- Headers Panel -->
-                        <div class="dev-panel" id="devHeadersPanel">
-                            <table class="dev-headers-table">
-                                <thead>
-                                    <tr>
-                                        <th width="40">☑</th>
-                                        <th>Key</th>
-                                        <th>Value</th>
-                                        <th width="40"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="devHeadersTableBody">
-                                    <!-- Dynamic rows -->
-                                </tbody>
-                            </table>
-                            <button class="dev-add-btn" id="devAddHeaderBtn">+ Add Header</button>
-                        </div>
-                        
-                        <!-- Body Panel -->
-                        <div class="dev-panel" id="devBodyPanel">
-                            <textarea class="dev-body-editor" id="devBodyEditor" spellcheck="false" placeholder="Request body JSON..."></textarea>
-                        </div>
-                    </div>
-
-                    <!-- JSON Diff Viewer (visible in both views when there are changes) -->
-                    <div class="diff-viewer" id="diffViewer">
-                        <label>🔄 JSON Changes from Template</label>
-                        <div class="diff-content" id="diffContent">
-                            <div class="diff-empty">Make changes to see the JSON diff</div>
-                        </div>
-                    </div>
-
-                    <button class="execute-btn" id="executeBtn">
-                        <span class="btn-icon">🚀</span>
-                        Execute Request
-                    </button>
-                </div>
-
-                <!-- Response Section -->
-                <div class="response-section" id="responseSection" style="display: none;">
-                    <div class="section-header">
-                        <h3>Response</h3>
-                        <div class="response-meta">
-                            <span class="status-badge" id="statusBadge">200 OK</span>
-                            <span class="response-time" id="responseTime">1.2s</span>
-                        </div>
-                    </div>
-                    <div class="response-tabs">
-                        <button class="tab-btn active" data-tab="formatted">📄 Formatted</button>
-                        <button class="tab-btn" data-tab="raw">🔧 Raw</button>
-                        <button class="tab-btn" data-tab="headers">📋 Headers</button>
-                    </div>
-                    <div class="response-content">
-                        <div class="tab-panel active" id="formattedPanel">
-                            <!-- Card view for clinicians (hidden by default, shown via JS) -->
-                            <div id="responseCardsContainer" class="response-cards-container"></div>
-                            <!-- JSON view for developers -->
-                            <pre class="json-response" id="responseFormatted" style="display: none;"><code>// Response will appear here</code></pre>
-                        </div>
-                        <div class="tab-panel" id="rawPanel">
-                            <textarea class="raw-response" id="responseRaw" readonly></textarea>
-                        </div>
-                        <div class="tab-panel" id="headersPanel">
-                            <pre class="headers-display" id="responseHeaders"><code>// Headers will appear here</code></pre>
                         </div>
                     </div>
                 </div>
-            </main>
-        </div>
 
-        <!-- Mobile Navigation Toggle -->
-        <button class="mobile-nav-toggle" id="mobileNavToggle" title="Scroll to top">↑</button>
+                <!-- View: Architecture -->
+                <div id="architectureView" class="workshop-view">
+                    <div class="view-header">
+                        <h2>🏗️ System Architecture</h2>
+                        <p>Visualize data flow between systems</p>
+                        <div class="animation-controls">
+                            <button class="anim-btn active" data-anim="packet">📦 Packets</button>
+                            <button class="anim-btn" data-anim="progress">▓ Progress</button>
+                        </div>
+                    </div>
+                    <div class="architecture-canvas" id="architectureCanvas">
+                        <svg id="architectureSvg" viewBox="0 0 800 400">
+                            <!-- Swimlane diagram will be rendered here -->
+                        </svg>
+                    </div>
+                    <div class="architecture-legend">
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #3b82f6;"></span>
+                            <span>Your Group</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #f97316;"></span>
+                            <span>FHIRLab SHR</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #ec4899;"></span>
+                            <span>Other Groups</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- View: Facilitator -->
+                <div id="facilitatorView" class="workshop-view">
+                    <div class="view-header">
+                        <h2>🎯 Facilitator Dashboard</h2>
+                        <p>Overview of all groups and workshop progress</p>
+                    </div>
+                    <div class="facilitator-dashboard" id="facilitatorDashboard">
+                        <div class="dashboard-grid" id="dashboardGrid">
+                            <!-- All groups displayed here -->
+                        </div>
+                        <div class="workshop-stats" id="workshopStats">
+                            <div class="stat-card">
+                                <span class="stat-value" id="totalPatients">0</span>
+                                <span class="stat-label">Patients Created</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-value" id="totalSearches">0</span>
+                                <span class="stat-label">Searches Done</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-value" id="activeGroups">5</span>
+                                <span class="stat-label">Active Groups</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Response & Context -->
+            <aside class="workshop-rightbar">
+                <div class="response-section">
+                    <h3>📡 Response</h3>
+                    <div class="response-container" id="responseContainer">
+                        <div class="response-placeholder">
+                            <span class="placeholder-icon">📭</span>
+                            <p>Execute a request to see the response</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="context-section" id="contextSection">
+                    <h3>💡 Context</h3>
+                    <div class="context-content" id="contextContent">
+                        <p>You're creating a patient record that other groups will search for.</p>
+                        <p>This demonstrates how FHIR enables interoperability between healthcare systems.</p>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Mobile Navigation -->
+        <nav class="mobile-nav" id="mobileNav">
+            <button class="mobile-nav-btn" data-view="clinician">
+                <span>👤</span>
+                <small>Clinician</small>
+            </button>
+            <button class="mobile-nav-btn" data-view="developer">
+                <span>💻</span>
+                <small>Developer</small>
+            </button>
+            <button class="mobile-nav-btn" data-view="architecture">
+                <span>🏗️</span>
+                <small>Arch</small>
+            </button>
+            <button class="mobile-nav-btn" data-view="facilitator">
+                <span>🎯</span>
+                <small>All</small>
+            </button>
+        </nav>
 
         <!-- Footer -->
-        <footer class="app-footer">
-            <p>FAHLA 2026 Workshop 3 — FHIR Interoperability Explorer</p>
-            <p class="disclaimer">⚠️ Do not use with real patient data. All requests go to public test servers.</p>
+        <footer class="workshop-footer">
+            <p>FAHLA 2026 — FHIR Interoperability Workshop</p>
+            <p class="disclaimer">⚠️ Test data only. Connected to FHIRLab servers.</p>
         </footer>
     </div>
 
-    <script src="js/operations.js"></script>
-    <script src="js/diff.js"></script>
+    <!-- Scripts -->
+    <script src="js/workshop-config.js"></script>
+    <script src="js/workshop-sync.js"></script>
+    <script src="js/workshop-architecture.js"></script>
     <script src="js/fhir-client.js"></script>
-    <script src="js/response-cards.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/workshop-app.js"></script>
 </body>
 </html>

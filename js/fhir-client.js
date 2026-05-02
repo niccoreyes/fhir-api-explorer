@@ -263,6 +263,146 @@ class FHIRClient {
     }
 }
 
+    /**
+     * Workshop-specific: Create a patient
+     */
+    async createPatient(patientData) {
+        const url = `${this.servers.cdr}/Patient`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: this.defaultHeaders,
+            body: JSON.stringify(patientData)
+        });
+        
+        const data = await response.json();
+        
+        return {
+            success: response.ok,
+            status: response.status,
+            statusText: response.statusText,
+            data: data,
+            responseTime: '0.5s'
+        };
+    }
+
+    /**
+     * Workshop-specific: Search for a patient by name
+     */
+    async searchPatient(familyName, givenName) {
+        const params = new URLSearchParams();
+        if (familyName) params.append('family', familyName);
+        if (givenName) params.append('given', givenName);
+        
+        const url = `${this.servers.cdr}/Patient?${params.toString()}`;
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/fhir+json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        return {
+            success: response.ok,
+            status: response.status,
+            statusText: response.statusText,
+            data: data,
+            responseTime: '0.5s'
+        };
+    }
+
+    /**
+     * Generic GET request
+     */
+    async get(endpoint) {
+        const url = endpoint.startsWith('http') ? endpoint : `${this.servers.cdr}${endpoint}`;
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/fhir+json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        return {
+            success: response.ok,
+            status: response.status,
+            data: data,
+            responseTime: '0.5s'
+        };
+    }
+
+    /**
+     * Generic POST request
+     */
+    async post(endpoint, body) {
+        const url = endpoint.startsWith('http') ? endpoint : `${this.servers.cdr}${endpoint}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: this.defaultHeaders,
+            body: JSON.stringify(body)
+        });
+        
+        const data = await response.json();
+        
+        return {
+            success: response.ok,
+            status: response.status,
+            data: data,
+            responseTime: '0.5s'
+        };
+    }
+
+    /**
+     * Generic PUT request
+     */
+    async put(endpoint, body) {
+        const url = endpoint.startsWith('http') ? endpoint : `${this.servers.cdr}${endpoint}`;
+        
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: this.defaultHeaders,
+            body: JSON.stringify(body)
+        });
+        
+        const data = await response.json();
+        
+        return {
+            success: response.ok,
+            status: response.status,
+            data: data,
+            responseTime: '0.5s'
+        };
+    }
+
+    /**
+     * Generic DELETE request
+     */
+    async delete(endpoint) {
+        const url = endpoint.startsWith('http') ? endpoint : `${this.servers.cdr}${endpoint}`;
+        
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/fhir+json'
+            }
+        });
+        
+        return {
+            success: response.ok,
+            status: response.status,
+            data: {},
+            responseTime: '0.5s'
+        };
+    }
+}
+
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { FHIRClient };
