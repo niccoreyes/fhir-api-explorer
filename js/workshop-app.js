@@ -29,10 +29,7 @@ class WorkshopApp {
         this.cacheElements();
         this.bindEvents();
         
-        // Check if user has already selected case/group
-        this.loadSavedSession();
-        
-        // Initialize managers
+        // Initialize managers FIRST (before any UI setup that needs them)
         this.syncManager = new WorkshopSyncManager();
         this.groupStatusSync = new GroupStatusSync();
         this.fhirClient = new FHIRClient();
@@ -48,6 +45,9 @@ class WorkshopApp {
         
         // Start group status monitoring
         this.setupGroupStatus();
+        
+        // Check if user has already selected case/group (AFTER managers are ready)
+        this.loadSavedSession();
     }
 
     // ============================================
