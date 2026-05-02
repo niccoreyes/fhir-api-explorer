@@ -121,4 +121,5 @@ out/
 *.tmp
 *.temp
 temp/
-tmp/
+tmp/*.png
+test-results/
