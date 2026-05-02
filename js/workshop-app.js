@@ -31,8 +31,8 @@ class WorkshopApp {
         
         // Initialize managers FIRST (before any UI setup that needs them)
         this.syncManager = new WorkshopSyncManager();
-        this.groupStatusSync = new GroupStatusSync();
         this.fhirClient = new FHIRClient();
+        this.groupStatusSync = new GroupStatusSync(this.fhirClient);
         
         // Initialize architecture view if container exists
         const archCanvas = document.getElementById('architectureCanvas');
@@ -398,14 +398,14 @@ class WorkshopApp {
             this.syncManager = new WorkshopSyncManager();
             this.setupSync();
         }
-        if (!this.groupStatusSync) {
-            console.error('groupStatusSync not initialized - creating now');
-            this.groupStatusSync = new GroupStatusSync();
-            this.setupGroupStatus();
-        }
         if (!this.fhirClient) {
             console.error('fhirClient not initialized - creating now');
             this.fhirClient = new FHIRClient();
+        }
+        if (!this.groupStatusSync) {
+            console.error('groupStatusSync not initialized - creating now');
+            this.groupStatusSync = new GroupStatusSync(this.fhirClient);
+            this.setupGroupStatus();
         }
         
         const caseConfig = getCaseInfo(this.state.currentCase);
@@ -700,14 +700,14 @@ class WorkshopApp {
         const caseConfig = getCaseInfo(this.state.currentCase);
         
         // SAFETY CHECK: Ensure managers are initialized
-        if (!this.groupStatusSync) {
-            console.error('groupStatusSync not initialized - creating now');
-            this.groupStatusSync = new GroupStatusSync();
-            this.setupGroupStatus();
-        }
         if (!this.fhirClient) {
             console.error('fhirClient not initialized - creating now');
             this.fhirClient = new FHIRClient();
+        }
+        if (!this.groupStatusSync) {
+            console.error('groupStatusSync not initialized - creating now');
+            this.groupStatusSync = new GroupStatusSync(this.fhirClient);
+            this.setupGroupStatus();
         }
         if (!this.syncManager) {
             console.error('syncManager not initialized - creating now');
@@ -749,8 +749,28 @@ class WorkshopApp {
             let response;
             
             if (task.type === 'create') {
-                // Create patient - get the raw object, not the stringified version
-                const body = this.syncManager.state.jsonBody;
+                // Create patient - get the raw object and add workshop metadata
+                const body = { ...this.syncManager.state.jsonBody };
+                
+                // Add metadata to track which group created this patient
+                if (!body.meta) body.meta = {};
+                if (!body.meta.tag) body.meta.tag = [];
+                
+                // Add workshop tag with group info
+                body.meta.tag.push({
+                    system: 'http://fahla.workshop/2026',
+                    code: `group${this.state.currentGroup}-${this.state.currentCase}-create`,
+                    display: `Group ${this.state.currentGroup} - ${this.state.currentCase}`
+                });
+                
+                // Add identifier with group info
+                if (!body.identifier) body.identifier = [];
+                body.identifier.push({
+                    use: 'secondary',
+                    system: 'http://fahla.workshop/group',
+                    value: this.state.currentGroup.toString()
+                });
+                
                 response = await this.fhirClient.createPatient(body);
             } else {
                 // Search patient
