@@ -931,22 +931,25 @@ class WorkshopApp {
         
         // Format the response data nicely
         let responseContent = '';
+        let rawJson = '';
         if (response.data) {
+            rawJson = JSON.stringify(response.data, null, 2);
             if (response.data.resourceType === 'Patient') {
                 // Extract key patient info for display
                 const name = response.data.name?.[0] ? 
                     `${response.data.name[0].given?.join(' ')} ${response.data.name[0].family}` : 
                     'Unknown';
                 const id = response.data.id || 'N/A';
-                responseContent = `📋 Patient Created\n👤 Name: ${name}\n🆔 ID: ${id}\n\n📄 Full Response:\n${JSON.stringify(response.data, null, 2)}`;
+                responseContent = `📋 Patient Created\n👤 Name: ${name}\n🆔 ID: ${id}\n\n📄 Full Response:\n${rawJson}`;
             } else if (response.data.resourceType === 'Bundle') {
                 const count = response.data.entry?.length || 0;
-                responseContent = `🔍 Search Results\n📊 Found: ${count} patient(s)\n\n📄 Full Response:\n${JSON.stringify(response.data, null, 2)}`;
+                responseContent = `🔍 Search Results\n📊 Found: ${count} patient(s)\n\n📄 Full Response:\n${rawJson}`;
             } else {
-                responseContent = JSON.stringify(response.data, null, 2);
+                responseContent = rawJson;
             }
         } else {
-            responseContent = JSON.stringify(response, null, 2);
+            rawJson = JSON.stringify(response, null, 2);
+            responseContent = rawJson;
         }
         
         this.responseContainer.innerHTML = `
@@ -957,6 +960,9 @@ class WorkshopApp {
                 </div>
                 <div class="response-summary">
                     <strong>${title}</strong> - ${isSuccess ? 'Request completed successfully' : 'Request failed'}
+                </div>
+                <div class="response-actions">
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText(\`${rawJson.replace(/`/g, '\\`')}\`).then(() => { this.textContent = '✓ Copied!'; setTimeout(() => this.textContent = '📋 Copy JSON', 2000); })">📋 Copy JSON</button>
                 </div>
                 <pre class="response-body">${responseContent}</pre>
             </div>
