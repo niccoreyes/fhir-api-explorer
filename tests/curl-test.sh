@@ -10,7 +10,7 @@ BASE_URL="http://localhost:8080"
 
 # Test 1: Entry page loads
 echo "Test 1: Entry page loads"
-curl -s $BASE_URL | grep -q "FAHLA 2026"
+curl -s $BASE_URL | grep -q "Aklan FHIR"
 if [ $? -eq 0 ]; then
     echo "✅ Entry page accessible"
 else
