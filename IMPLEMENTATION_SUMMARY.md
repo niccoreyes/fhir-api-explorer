@@ -48,15 +48,26 @@ A hands-on FHIR interoperability workshop platform for 50 participants, featurin
 
 ### 7. **Architecture Swimlane Diagram** (NEW)
 - **Light mode** background (not dark)
-- **Swimlane layout**: RHU (top) → FHIRLab SHR (middle) → Hospital (bottom)
+- **Steps as Rows, Entities as Columns**:
+  - **Rows**: Step 1 (Create/Search) → Step 2 (Process) → Step 3 (Store/Index) → Step 4 (Return)
+  - **Columns**: RHU → FHIRLab SHR → Hospital
 - **Detailed API call boxes** showing:
-  - HTTP method (POST/GET)
+  - HTTP method (POST/GET/PROCESS/INDEX/RETURN)
   - FHIR endpoint (/Patient)
-  - Headers (Content-Type, Accept)
-  - Request body preview
-- **Curved arrows** showing data flow direction
-- **Time axis** at bottom showing request progression
+  - Description of action
+- **Curved arrows** showing data flow between steps
+- **Grid lines** separating columns and rows
 - **Animated packets** showing real-time data flow
+
+### 8. **Complete Editable JSON Fields** (NEW)
+All form fields are editable and sync to JSON:
+- **Name**: Family, Given, Name Type (official/usual/nickname)
+- **Identifier**: Patient ID, ID Type (Medical Record/PHN/Other)
+- **Demographics**: Gender (male/female/other/unknown), Birth Date
+- **Contact**: Phone, Email
+- **Address**: Street, City, Province, Postal Code
+- **Status**: Active/Inactive
+- **Search**: Search by (Name/ID/Birth/Phone), Search value
 
 ### 7. **Testing Suite**
 - ✅ Multi-group simulation (Group 1 CREATE, Group 3 SEARCH, Facilitator)
