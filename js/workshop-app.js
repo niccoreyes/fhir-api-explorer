@@ -461,27 +461,50 @@ class WorkshopApp {
             <div class="form-section">
                 <h3>Patient Information</h3>
                 <div class="form-grid">
+                    <!-- Name Fields -->
                     <div class="form-group">
-                        <label for="familyName">Family Name</label>
+                        <label for="familyName">Family Name *</label>
                         <input type="text" id="familyName" name="familyName" 
                                value="${caseConfig.patient.familyName}" 
-                               ${!isCreate ? 'readonly' : ''}>
+                               ${!isCreate ? 'readonly' : ''}
+                               placeholder="Dela Cruz">
                     </div>
                     <div class="form-group">
-                        <label for="givenName">Given Name</label>
+                        <label for="givenName">Given Name(s) *</label>
                         <input type="text" id="givenName" name="givenName" 
                                value="${caseConfig.patient.givenName}"
-                               ${!isCreate ? 'readonly' : ''}>
+                               ${!isCreate ? 'readonly' : ''}
+                               placeholder="Rico Juan">
                     </div>
+                    <div class="form-group">
+                        <label for="nameUse">Name Type</label>
+                        <select id="nameUse" name="nameUse" ${!isCreate ? 'disabled' : ''}>
+                            <option value="official" selected>Official (Legal)</option>
+                            <option value="usual">Usual (Common)</option>
+                            <option value="nickname">Nickname</option>
+                        </select>
+                    </div>
+                    
                     ${isCreate ? `
+                    <!-- Identifier Fields -->
                     <div class="form-group">
                         <label for="identifier">Patient ID</label>
                         <input type="text" id="identifier" name="identifier" 
-                               placeholder="Auto-generated">
+                               placeholder="e.g., PT-12345">
                     </div>
                     <div class="form-group">
-                        <label for="gender">Gender</label>
-                        <select id="gender" name="gender">
+                        <label for="identifierType">ID Type</label>
+                        <select id="identifierType" name="identifierType">
+                            <option value="MR">Medical Record Number</option>
+                            <option value="PHN">Philippine Health Number</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Gender and Birth -->
+                    <div class="form-group">
+                        <label for="gender">Gender *</label>
+                        <select id="gender" name="gender" required>
                             <option value="">Select...</option>
                             <option value="male">Male</option>
                             <option value="female">Female</option>
@@ -490,23 +513,67 @@ class WorkshopApp {
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="birthDate">Birth Date</label>
-                        <input type="date" id="birthDate" name="birthDate">
+                        <label for="birthDate">Birth Date *</label>
+                        <input type="date" id="birthDate" name="birthDate" required>
+                    </div>
+                    
+                    <!-- Contact Information -->
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" name="phone" placeholder="+63 912 345 6789">
                     </div>
                     <div class="form-group">
-                        <label for="phone">Phone</label>
-                        <input type="tel" id="phone" name="phone" placeholder="+63...">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="patient@email.com">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="address">Address</label>
+                        <textarea id="address" name="address" rows="2" placeholder="Street, Barangay, City, Province"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="addressCity">City/Municipality</label>
+                        <input type="text" id="addressCity" name="addressCity" placeholder="Kalibo">
+                    </div>
+                    <div class="form-group">
+                        <label for="addressProvince">Province</label>
+                        <input type="text" id="addressProvince" name="addressProvince" placeholder="Aklan">
+                    </div>
+                    <div class="form-group">
+                        <label for="addressPostal">Postal Code</label>
+                        <input type="text" id="addressPostal" name="addressPostal" placeholder="5600">
+                    </div>
+                    
+                    <!-- Status -->
+                    <div class="form-group">
+                        <label for="status">Record Status</label>
+                        <select id="status" name="status">
+                            <option value="active" selected>Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
                     </div>
                     ` : `
+                    <!-- Search Fields -->
                     <div class="form-group">
-                        <label for="searchCriteria">Search by</label>
+                        <label for="searchCriteria">Search By</label>
                         <select id="searchCriteria" name="searchCriteria">
-                            <option value="name">Name</option>
+                            <option value="name" selected>Name</option>
                             <option value="identifier">Patient ID</option>
+                            <option value="birthDate">Birth Date</option>
+                            <option value="phone">Phone</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="searchValue">Search Value</label>
+                        <input type="text" id="searchValue" name="searchValue" 
+                               placeholder="Enter search term...">
                     </div>
                     `}
                 </div>
+            </div>
+            
+            <div class="form-info">
+                <small>* Required fields</small>
+                <small class="sync-hint">💡 All fields sync to JSON in Developer view</small>
             </div>
             
             <button class="execute-btn" id="executeTaskBtn">

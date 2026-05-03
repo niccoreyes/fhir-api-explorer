@@ -176,7 +176,7 @@ class WorkshopSyncManager {
     }
 
     /**
-     * Build FHIR JSON from form data
+     * Build FHIR JSON from form data - ALL FIELDS
      */
     buildFHIRJson(formData) {
         // Default Patient resource structure
@@ -191,19 +191,40 @@ class WorkshopSyncManager {
             }
         };
 
-        // Add identifier if provided
+        // Add status
+        if (formData.status) {
+            resource.active = formData.status === 'active';
+        }
+
+        // Add identifier with type
         if (formData.identifier) {
+            const idType = formData.identifierType || 'MR';
+            const typeMap = {
+                'MR': { text: 'Medical Record Number', code: 'MR' },
+                'PHN': { text: 'Philippine Health Number', code: 'PHN' },
+                'other': { text: 'Other', code: 'OTH' }
+            };
+            const typeInfo = typeMap[idType] || typeMap['MR'];
+            
             resource.identifier = [{
                 use: 'official',
-                value: formData.identifier,
-                system: 'http://fahla.workshop/patient-id'
+                type: {
+                    coding: [{
+                        system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                        code: typeInfo.code,
+                        display: typeInfo.text
+                    }],
+                    text: typeInfo.text
+                },
+                system: `http://fahla.workshop/${idType.toLowerCase()}`,
+                value: formData.identifier
             }];
         }
 
-        // Add name
+        // Add name with use
         if (formData.familyName || formData.givenName) {
             resource.name = [{
-                use: 'official'
+                use: formData.nameUse || 'official'
             }];
             
             if (formData.familyName) {
@@ -211,7 +232,7 @@ class WorkshopSyncManager {
             }
             
             if (formData.givenName) {
-                resource.name[0].given = formData.givenName.split(' ');
+                resource.name[0].given = formData.givenName.split(' ').filter(g => g);
             }
         }
 
@@ -225,40 +246,91 @@ class WorkshopSyncManager {
             resource.birthDate = formData.birthDate;
         }
 
-        // Add phone
+        // Build telecom array (phone and email)
+        const telecom = [];
         if (formData.phone) {
-            resource.telecom = [{
+            telecom.push({
                 system: 'phone',
                 value: formData.phone,
                 use: 'mobile'
-            }];
+            });
+        }
+        if (formData.email) {
+            telecom.push({
+                system: 'email',
+                value: formData.email,
+                use: 'home'
+            });
+        }
+        if (telecom.length > 0) {
+            resource.telecom = telecom;
         }
 
-        // Add address
-        if (formData.address) {
-            resource.address = [{
+        // Build address with components
+        if (formData.address || formData.addressCity || formData.addressProvince) {
+            const address = {
                 use: 'home',
-                text: formData.address
-            }];
+                type: 'both'
+            };
+            
+            // Full text address
+            const parts = [];
+            if (formData.address) parts.push(formData.address);
+            if (formData.addressCity) parts.push(formData.addressCity);
+            if (formData.addressProvince) parts.push(formData.addressProvince);
+            if (formData.addressPostal) parts.push(formData.addressPostal);
+            if (parts.length > 0) {
+                address.text = parts.join(', ');
+            }
+            
+            // Structured address
+            if (formData.address) {
+                address.line = [formData.address];
+            }
+            if (formData.addressCity) {
+                address.city = formData.addressCity;
+            }
+            if (formData.addressProvince) {
+                address.state = formData.addressProvince;
+            }
+            if (formData.addressPostal) {
+                address.postalCode = formData.addressPostal;
+            }
+            address.country = 'PH'; // Philippines
+            
+            resource.address = [address];
         }
 
         return resource;
     }
 
     /**
-     * Extract form data from FHIR JSON
+     * Extract form data from FHIR JSON - ALL FIELDS
      */
     extractFormData(jsonBody) {
         const formData = {};
 
-        // Extract identifier
+        // Extract status
+        if (jsonBody.active !== undefined) {
+            formData.status = jsonBody.active ? 'active' : 'inactive';
+        }
+
+        // Extract identifier and type
         if (jsonBody.identifier && jsonBody.identifier.length > 0) {
-            formData.identifier = jsonBody.identifier[0].value;
+            const id = jsonBody.identifier[0];
+            formData.identifier = id.value;
+            if (id.type && id.type.coding && id.type.coding.length > 0) {
+                const code = id.type.coding[0].code;
+                if (code === 'PHN') formData.identifierType = 'PHN';
+                else if (code === 'MR') formData.identifierType = 'MR';
+                else formData.identifierType = 'other';
+            }
         }
 
         // Extract name
         if (jsonBody.name && jsonBody.name.length > 0) {
             const name = jsonBody.name[0];
+            formData.nameUse = name.use || 'official';
             if (name.family) {
                 formData.familyName = name.family;
             }
@@ -277,17 +349,34 @@ class WorkshopSyncManager {
             formData.birthDate = jsonBody.birthDate;
         }
 
-        // Extract phone
+        // Extract phone and email from telecom
         if (jsonBody.telecom && jsonBody.telecom.length > 0) {
             const phone = jsonBody.telecom.find(t => t.system === 'phone');
             if (phone) {
                 formData.phone = phone.value;
             }
+            const email = jsonBody.telecom.find(t => t.system === 'email');
+            if (email) {
+                formData.email = email.value;
+            }
         }
 
-        // Extract address
+        // Extract address with all components
         if (jsonBody.address && jsonBody.address.length > 0) {
-            formData.address = jsonBody.address[0].text || '';
+            const address = jsonBody.address[0];
+            formData.address = address.text || '';
+            if (address.line && address.line.length > 0) {
+                formData.address = address.line.join(', ');
+            }
+            if (address.city) {
+                formData.addressCity = address.city;
+            }
+            if (address.state) {
+                formData.addressProvince = address.state;
+            }
+            if (address.postalCode) {
+                formData.addressPostal = address.postalCode;
+            }
         }
 
         return formData;
