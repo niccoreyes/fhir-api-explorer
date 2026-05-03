@@ -14,10 +14,10 @@ A hands-on FHIR interoperability workshop platform for 50 participants, featurin
 - Session persistence via sessionStorage
 
 ### 2. **Three-View Architecture**
-- **👤 Clinician View**: EHR-style forms with pre-populated patient data
-- **💻 Developer View**: FHIR API editor with JSON editing
-- **🏗️ Architecture View**: Interactive SVG swimlane diagram with animations
-- **🎯 Facilitator View**: Real-time dashboard monitoring all groups
+- **👤 Clinician View**: EHR-style forms with pre-populated patient data, **card-based responses** (not JSON)
+- **💻 Developer View**: FHIR API editor with JSON editing, raw JSON responses with Copy button
+- **🏗️ Architecture View**: **Light mode swimlane diagram** showing RHU → SHR → Hospital flow with detailed API calls
+- **🎯 Facilitator View**: Real-time dashboard monitoring all groups with patient/search counts
 
 ### 3. **Server-Side Coordination**
 - ✅ Uses FHIR server (FHIRLab) to track group progress
@@ -38,12 +38,25 @@ A hands-on FHIR interoperability workshop platform for 50 participants, featurin
 - Visual sync status indicators
 
 ### 6. **Enhanced UI/UX**
-- Light mode design for stakeholder presentations
-- Mobile-responsive with bottom navigation
+- **Light mode design** for stakeholder presentations
+- **Mobile-responsive** with bottom navigation
+- **Response panel visible on mobile** (fixed hidden panel issue)
 - Group-specific color coding
 - Visual status indicators (⏳/🔄/✅)
 - Copy JSON button for developers
 - Improved error messages with helpful suggestions
+
+### 7. **Architecture Swimlane Diagram** (NEW)
+- **Light mode** background (not dark)
+- **Swimlane layout**: RHU (top) → FHIRLab SHR (middle) → Hospital (bottom)
+- **Detailed API call boxes** showing:
+  - HTTP method (POST/GET)
+  - FHIR endpoint (/Patient)
+  - Headers (Content-Type, Accept)
+  - Request body preview
+- **Curved arrows** showing data flow direction
+- **Time axis** at bottom showing request progression
+- **Animated packets** showing real-time data flow
 
 ### 7. **Testing Suite**
 - ✅ Multi-group simulation (Group 1 CREATE, Group 3 SEARCH, Facilitator)
