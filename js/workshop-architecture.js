@@ -1,369 +1,454 @@
 // ============================================
-// Workshop Architecture View - SVG Swimlane Diagram
+// Workshop Architecture View - Light Mode Swimlane Diagram
+// Based on OpenFHIR architecture style
 // ============================================
 
 class ArchitectureView {
     constructor(containerId, svgId) {
         this.container = document.getElementById(containerId);
         this.svg = document.getElementById(svgId);
-        this.animationMode = 'packet'; // 'packet' or 'progress'
+        this.animationMode = 'packet';
         this.activeAnimations = [];
         
-        // System positions (calculated based on SVG size)
-        this.systems = {
-            group1: { x: 100, y: 100, label: 'Group 1', color: '#3b82f6' },
-            group2: { x: 100, y: 200, label: 'Group 2', color: '#8b5cf6' },
-            group3: { x: 700, y: 100, label: 'Group 3', color: '#ec4899' },
-            group4: { x: 700, y: 200, label: 'Group 4', color: '#10b981' },
-            group5: { x: 700, y: 300, label: 'Group 5', color: '#f59e0b' },
-            shr: { x: 400, y: 200, label: 'FHIRLab SHR', color: '#f97316' }
+        // Swimlane configuration
+        this.swimlanes = {
+            rhu: { 
+                label: '🏥 RURAL HEALTH UNIT', 
+                y: 80, 
+                height: 180,
+                color: '#dbeafe',
+                textColor: '#1e40af'
+            },
+            shr: { 
+                label: '🔶 FHIRLAB SHR', 
+                y: 280, 
+                height: 140,
+                color: '#ffedd5',
+                textColor: '#9a3412'
+            },
+            hospital: { 
+                label: '🏨 PROVINCIAL HOSPITAL', 
+                y: 440, 
+                height: 180,
+                color: '#fce7f3',
+                textColor: '#9d174d'
+            }
         };
 
         this.init();
     }
 
     init() {
-        this.renderBaseDiagram();
+        this.renderSwimlaneDiagram();
         this.setupEventListeners();
     }
 
     // ============================================
-    // RENDER BASE DIAGRAM
+    // RENDER SWIMLANE DIAGRAM
     // ============================================
 
-    renderBaseDiagram() {
+    renderSwimlaneDiagram() {
         // Clear existing content
         this.svg.innerHTML = '';
-
-        // Define gradients and markers
-        const defs = this.createSVGElement('defs');
         
-        // Arrow marker
+        // Set viewBox for proper scaling
+        this.svg.setAttribute('viewBox', '0 0 900 640');
+        this.svg.style.background = '#f8fafc';
+
+        // Define arrow marker
+        const defs = this.createSVGElement('defs');
         const marker = this.createSVGElement('marker', {
             id: 'arrowhead',
             markerWidth: '10',
-            markerHeight: '7',
+            markerHeight: '10',
             refX: '9',
-            refY: '3.5',
+            refY: '3',
             orient: 'auto'
         });
         const polygon = this.createSVGElement('polygon', {
-            points: '0 0, 10 3.5, 0 7',
-            fill: '#94a3b8'
+            points: '0 0, 10 3, 0 6',
+            fill: '#64748b'
         });
         marker.appendChild(polygon);
         defs.appendChild(marker);
-        
         this.svg.appendChild(defs);
 
-        // Draw connections (lines between systems)
-        this.drawConnections();
-
-        // Draw systems (nodes)
-        Object.entries(this.systems).forEach(([key, system]) => {
-            this.drawSystem(system, key);
-        });
-
-        // Draw swimlane labels
-        this.drawSwimlaneLabels();
+        // Draw swimlanes
+        this.drawSwimlanes();
+        
+        // Draw flow arrows and API calls
+        this.drawFlowArrows();
+        
+        // Draw time axis
+        this.drawTimeAxis();
     }
 
-    drawConnections() {
-        // Connections from groups to SHR
-        const leftGroups = ['group1', 'group2'];
-        const rightGroups = ['group3', 'group4', 'group5'];
+    drawSwimlanes() {
+        Object.entries(this.swimlanes).forEach(([key, lane]) => {
+            // Swimlane background
+            const rect = this.createSVGElement('rect', {
+                x: '0',
+                y: lane.y,
+                width: '900',
+                height: lane.height,
+                fill: lane.color,
+                stroke: '#e2e8f0',
+                'stroke-width': '1'
+            });
+            this.svg.appendChild(rect);
 
-        // Left side connections
-        leftGroups.forEach(groupKey => {
-            const group = this.systems[groupKey];
-            const path = this.createConnectionPath(
-                group.x + 60, group.y,
-                this.systems.shr.x - 60, this.systems.shr.y,
-                group.color
-            );
-            this.svg.appendChild(path);
-        });
+            // Swimlane label
+            const label = this.createSVGElement('text', {
+                x: '20',
+                y: lane.y + 25,
+                fill: lane.textColor,
+                'font-size': '14',
+                'font-weight': 'bold',
+                'font-family': 'system-ui, sans-serif'
+            });
+            label.textContent = lane.label;
+            this.svg.appendChild(label);
 
-        // Right side connections
-        rightGroups.forEach(groupKey => {
-            const group = this.systems[groupKey];
-            const path = this.createConnectionPath(
-                this.systems.shr.x + 60, this.systems.shr.y,
-                group.x - 60, group.y,
-                group.color
-            );
-            this.svg.appendChild(path);
+            // Add role description
+            const roleDesc = this.createSVGElement('text', {
+                x: '20',
+                y: lane.y + 45,
+                fill: lane.textColor,
+                'font-size': '11',
+                'font-family': 'system-ui, sans-serif',
+                opacity: '0.7'
+            });
+            roleDesc.textContent = key === 'rhu' ? 'Creates patient records' :
+                                   key === 'shr' ? 'Shared Health Record - stores all data' :
+                                   'Searches for patient records';
+            this.svg.appendChild(roleDesc);
+
+            // Separator line
+            if (key !== 'hospital') {
+                const line = this.createSVGElement('line', {
+                    x1: '0',
+                    y1: lane.y + lane.height,
+                    x2: '900',
+                    y2: lane.y + lane.height,
+                    stroke: '#cbd5e1',
+                    'stroke-width': '2'
+                });
+                this.svg.appendChild(line);
+            }
         });
     }
 
-    createConnectionPath(x1, y1, x2, y2, color) {
-        const path = this.createSVGElement('path', {
-            d: `M ${x1} ${y1} L ${x2} ${y2}`,
-            stroke: color || '#94a3b8',
+    drawFlowArrows() {
+        // Step 1: Group 1/2 CREATE Patient
+        this.drawAPICallBox({
+            x: 100,
+            y: 110,
+            width: 200,
+            height: 80,
+            lane: 'rhu',
+            method: 'POST',
+            endpoint: '/Patient',
+            description: 'Create Patient',
+            headers: ['Content-Type: application/fhir+json'],
+            body: '{\n  "resourceType": "Patient",\n  "name": [{\n    "family": "Dela Cruz",\n    "given": ["Rico"]\n  }]\n}',
+            color: '#3b82f6'
+        });
+
+        // Arrow from RHU to SHR
+        this.drawArrow({
+            x1: 300,
+            y1: 150,
+            x2: 350,
+            y2: 340,
+            label: 'Store Patient',
+            color: '#3b82f6'
+        });
+
+        // Step 2: SHR stores patient
+        this.drawAPICallBox({
+            x: 380,
+            y: 310,
+            width: 200,
+            height: 80,
+            lane: 'shr',
+            method: 'STORE',
+            endpoint: 'Patient Index',
+            description: 'Index Patient',
+            headers: ['Tag: group1-case1-create'],
+            body: 'Patient stored with ID: {generated}',
+            color: '#f97316'
+        });
+
+        // Arrow from SHR to Hospital
+        this.drawArrow({
+            x1: 580,
+            y1: 350,
+            x2: 630,
+            y2: 480,
+            label: 'Available for search',
+            color: '#64748b',
+            dashed: true
+        });
+
+        // Step 3: Group 3/4/5 SEARCH Patient
+        this.drawAPICallBox({
+            x: 650,
+            y: 470,
+            width: 200,
+            height: 80,
+            lane: 'hospital',
+            method: 'GET',
+            endpoint: '/Patient?name=Rico',
+            description: 'Search Patient',
+            headers: ['Accept: application/fhir+json'],
+            body: 'Query: family=Dela Cruz&given=Rico',
+            color: '#ec4899'
+        });
+
+        // Return arrow with result
+        this.drawArrow({
+            x1: 650,
+            y1: 510,
+            x2: 580,
+            y2: 370,
+            label: 'Return Bundle',
+            color: '#10b981',
+            dashed: true,
+            reverse: true
+        });
+    }
+
+    drawAPICallBox(config) {
+        const { x, y, width, height, method, endpoint, description, headers, body, color } = config;
+
+        // Box background
+        const rect = this.createSVGElement('rect', {
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            fill: '#ffffff',
+            stroke: color,
             'stroke-width': '2',
-            fill: 'none',
-            'stroke-dasharray': '5,5',
-            opacity: '0.4',
-            class: 'connection-line'
+            rx: '8',
+            class: 'api-call-box'
         });
-        return path;
-    }
+        this.svg.appendChild(rect);
 
-    drawSystem(system, key) {
-        const group = this.createSVGElement('g', {
-            class: 'system-node',
-            'data-system': key,
-            transform: `translate(${system.x}, ${system.y})`
+        // Method badge
+        const methodBadge = this.createSVGElement('rect', {
+            x: x + 10,
+            y: y + 10,
+            width: 50,
+            height: 20,
+            fill: color,
+            rx: '4'
         });
+        this.svg.appendChild(methodBadge);
 
-        // Outer glow
-        const glow = this.createSVGElement('circle', {
-            r: '45',
-            fill: system.color,
-            opacity: '0.2',
-            class: 'system-glow'
-        });
-
-        // Main circle
-        const circle = this.createSVGElement('circle', {
-            r: '35',
-            fill: '#1e293b',
-            stroke: system.color,
-            'stroke-width': '3',
-            class: 'system-circle'
-        });
-
-        // Icon/indicator
-        const icon = this.createSVGElement('text', {
-            x: '0',
-            y: '-5',
-            'text-anchor': 'middle',
-            fill: system.color,
-            'font-size': '20',
-            class: 'system-icon'
-        });
-        icon.textContent = key === 'shr' ? '🔶' : '🔷';
-
-        // Label
-        const label = this.createSVGElement('text', {
-            x: '0',
-            y: '15',
-            'text-anchor': 'middle',
+        const methodText = this.createSVGElement('text', {
+            x: x + 35,
+            y: y + 24,
             fill: '#ffffff',
             'font-size': '10',
             'font-weight': 'bold',
-            class: 'system-label'
+            'text-anchor': 'middle',
+            'font-family': 'system-ui, sans-serif'
         });
-        label.textContent = system.label;
+        methodText.textContent = method;
+        this.svg.appendChild(methodText);
 
-        // Sub-label for SHR
-        if (key === 'shr') {
-            const sublabel = this.createSVGElement('text', {
-                x: '0',
-                y: '55',
-                'text-anchor': 'middle',
-                fill: '#94a3b8',
-                'font-size': '9',
-                class: 'system-sublabel'
+        // Endpoint
+        const endpointText = this.createSVGElement('text', {
+            x: x + 70,
+            y: y + 24,
+            fill: '#374151',
+            'font-size': '11',
+            'font-weight': '600',
+            'font-family': 'monospace'
+        });
+        endpointText.textContent = endpoint;
+        this.svg.appendChild(endpointText);
+
+        // Description
+        const descText = this.createSVGElement('text', {
+            x: x + 10,
+            y: y + 45,
+            fill: '#6b7280',
+            'font-size': '10',
+            'font-family': 'system-ui, sans-serif'
+        });
+        descText.textContent = description;
+        this.svg.appendChild(descText);
+
+        // Headers
+        let currentY = y + 62;
+        headers.forEach(header => {
+            const headerText = this.createSVGElement('text', {
+                x: x + 10,
+                y: currentY,
+                fill: '#9ca3af',
+                'font-size': '8',
+                'font-family': 'monospace'
             });
-            sublabel.textContent = 'Shared Health Record';
-            group.appendChild(sublabel);
-        }
+            headerText.textContent = `H: ${header}`;
+            this.svg.appendChild(headerText);
+            currentY += 10;
+        });
 
-        group.appendChild(glow);
-        group.appendChild(circle);
-        group.appendChild(icon);
-        group.appendChild(label);
-
-        // Add click handler
-        group.addEventListener('click', () => this.onSystemClick(key));
-
-        this.svg.appendChild(group);
+        // Make it clickable for details
+        rect.style.cursor = 'pointer';
+        rect.addEventListener('click', () => {
+            this.showAPIDetails(config);
+        });
     }
 
-    drawSwimlaneLabels() {
-        // Left side label (RHU)
-        const leftLabel = this.createSVGElement('text', {
-            x: '50',
-            y: '50',
-            'text-anchor': 'middle',
-            fill: '#64748b',
-            'font-size': '12',
-            'font-weight': 'bold'
-        });
-        leftLabel.textContent = '🏥 RURAL HEALTH UNIT';
-        this.svg.appendChild(leftLabel);
+    drawArrow(config) {
+        const { x1, y1, x2, y2, label, color, dashed, reverse } = config;
 
-        // Right side label (Hospital)
-        const rightLabel = this.createSVGElement('text', {
-            x: '750',
-            y: '50',
-            'text-anchor': 'middle',
-            fill: '#64748b',
-            'font-size': '12',
-            'font-weight': 'bold'
+        // Calculate control points for curved arrow
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        
+        // Create path
+        const path = this.createSVGElement('path', {
+            d: `M ${x1} ${y1} Q ${midX} ${y1} ${midX} ${midY} T ${x2} ${y2}`,
+            fill: 'none',
+            stroke: color,
+            'stroke-width': '2',
+            'marker-end': reverse ? '' : 'url(#arrowhead)',
+            'marker-start': reverse ? 'url(#arrowhead)' : '',
+            'stroke-dasharray': dashed ? '5,5' : '0'
         });
-        rightLabel.textContent = '🏨 PROVINCIAL HOSPITAL';
-        this.svg.appendChild(rightLabel);
+        this.svg.appendChild(path);
 
-        // Center label (SHR)
-        const centerLabel = this.createSVGElement('text', {
-            x: '400',
-            y: '120',
-            'text-anchor': 'middle',
-            fill: '#f97316',
-            'font-size': '11',
-            'font-weight': 'bold'
+        // Label
+        if (label) {
+            const labelText = this.createSVGElement('text', {
+                x: midX,
+                y: midY - 5,
+                fill: color,
+                'font-size': '10',
+                'font-weight': '600',
+                'text-anchor': 'middle',
+                'font-family': 'system-ui, sans-serif',
+                class: 'arrow-label'
+            });
+            labelText.textContent = label;
+            this.svg.appendChild(labelText);
+        }
+    }
+
+    drawTimeAxis() {
+        // Time labels at bottom
+        const timeLabels = ['Start', 'Request', 'Process', 'Response', 'Complete'];
+        const xPositions = [50, 250, 450, 650, 850];
+
+        timeLabels.forEach((label, index) => {
+            const x = xPositions[index];
+            
+            // Vertical line
+            const line = this.createSVGElement('line', {
+                x1: x,
+                y1: 620,
+                x2: x,
+                y2: 635,
+                stroke: '#cbd5e1',
+                'stroke-width': '2'
+            });
+            this.svg.appendChild(line);
+
+            // Label
+            const text = this.createSVGElement('text', {
+                x: x,
+                y: 650,
+                fill: '#64748b',
+                'font-size': '10',
+                'text-anchor': 'middle',
+                'font-family': 'system-ui, sans-serif'
+            });
+            text.textContent = label;
+            this.svg.appendChild(text);
         });
-        centerLabel.textContent = '🔶 FHIRLAB SHARED HEALTH RECORD';
-        this.svg.appendChild(centerLabel);
+
+        // Time axis line
+        const axisLine = this.createSVGElement('line', {
+            x1: 50,
+            y1: 630,
+            x2: 850,
+            y2: 630,
+            stroke: '#cbd5e1',
+            'stroke-width': '2'
+        });
+        this.svg.appendChild(axisLine);
+    }
+
+    showAPIDetails(config) {
+        // Show detailed API information
+        const event = new CustomEvent('showAPIDetails', {
+            detail: config
+        });
+        document.dispatchEvent(event);
     }
 
     // ============================================
     // ANIMATIONS
     // ============================================
 
-    animateDataFlow(fromSystem, toSystem, data, mode = null) {
-        const animationMode = mode || this.animationMode;
-        const from = this.systems[fromSystem];
-        const to = this.systems[toSystem];
+    animateDataFlow(from, to, data) {
+        // Get swimlane positions
+        const fromLane = this.swimlanes[from];
+        const toLane = this.swimlanes[to];
         
-        if (!from || !to) {
-            console.error('Invalid system:', fromSystem, toSystem);
-            return;
-        }
+        if (!fromLane || !toLane) return;
 
-        if (animationMode === 'packet') {
-            this.animatePacket(from, to, data);
-        } else {
-            this.animateProgress(from, to, data);
-        }
-    }
-
-    animatePacket(from, to, data) {
-        // Create packet
-        const packet = this.createSVGElement('g', {
-            class: 'data-packet'
-        });
-
-        // Packet circle
-        const circle = this.createSVGElement('circle', {
+        // Create animated packet
+        const packet = this.createSVGElement('circle', {
             r: '8',
             fill: data.color || '#3b82f6',
             stroke: '#ffffff',
-            'stroke-width': '2'
+            'stroke-width': '2',
+            class: 'data-packet'
         });
 
-        // Packet icon
-        const icon = this.createSVGElement('text', {
-            x: '0',
-            y: '3',
-            'text-anchor': 'middle',
-            fill: '#ffffff',
-            'font-size': '8'
-        });
-        icon.textContent = data.icon || '📄';
+        // Starting position
+        const startX = 200;
+        const startY = fromLane.y + 50;
+        const endX = 600;
+        const endY = toLane.y + 50;
 
-        packet.appendChild(circle);
-        packet.appendChild(icon);
-
-        // Position at start
-        packet.setAttribute('transform', `translate(${from.x}, ${from.y})`);
+        packet.setAttribute('cx', startX);
+        packet.setAttribute('cy', startY);
         this.svg.appendChild(packet);
 
-        // Animate along path
-        const duration = WORKSHOP_CONFIG.animation.packetSpeed || 1000;
+        // Animate
+        const duration = 2000;
         const startTime = performance.now();
-        const startX = from.x;
-        const startY = from.y;
-        const endX = to.x;
-        const endY = to.y;
 
         const animate = (currentTime) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
             
-            // Easing function (ease-out)
+            // Ease out
             const easeOut = 1 - Math.pow(1 - progress, 3);
             
             const currentX = startX + (endX - startX) * easeOut;
             const currentY = startY + (endY - startY) * easeOut;
             
-            packet.setAttribute('transform', `translate(${currentX}, ${currentY})`);
+            packet.setAttribute('cx', currentX);
+            packet.setAttribute('cy', currentY);
             
             if (progress < 1) {
                 requestAnimationFrame(animate);
             } else {
-                // Animation complete - pulse the target system
-                this.pulseSystem(toSystem);
-                
-                // Show tooltip
-                this.showDataTooltip(to.x, to.y, data);
+                // Flash the destination swimlane
+                this.flashSwimlane(to);
                 
                 // Remove packet after delay
                 setTimeout(() => {
                     if (packet.parentNode) {
                         packet.parentNode.removeChild(packet);
                     }
-                }, 2000);
-            }
-        };
-
-        requestAnimationFrame(animate);
-
-        // Track animation
-        this.activeAnimations.push({
-            type: 'packet',
-            element: packet,
-            startTime
-        });
-    }
-
-    animateProgress(from, to, data) {
-        // Create progress line
-        const lineId = `progress-${Date.now()}`;
-        const path = this.createSVGElement('line', {
-            id: lineId,
-            x1: from.x,
-            y1: from.y,
-            x2: from.x,
-            y2: from.y,
-            stroke: data.color || '#3b82f6',
-            'stroke-width': '4',
-            'stroke-linecap': 'round',
-            opacity: '0.8'
-        });
-        
-        this.svg.appendChild(path);
-
-        // Animate line extension
-        const duration = WORKSHOP_CONFIG.animation.progressSpeed || 500;
-        const startTime = performance.now();
-        const startX = from.x;
-        const endX = to.x;
-
-        const animate = (currentTime) => {
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            
-            const currentX = startX + (endX - startX) * progress;
-            path.setAttribute('x2', currentX);
-            
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                // Pulse target
-                this.pulseSystem(toSystem);
-                
-                // Fade out
-                setTimeout(() => {
-                    path.style.transition = 'opacity 0.5s';
-                    path.style.opacity = '0';
-                    setTimeout(() => {
-                        if (path.parentNode) {
-                            path.parentNode.removeChild(path);
-                        }
-                    }, 500);
                 }, 1000);
             }
         };
@@ -371,122 +456,64 @@ class ArchitectureView {
         requestAnimationFrame(animate);
     }
 
-    pulseSystem(systemKey) {
-        const system = this.systems[systemKey];
-        if (!system) return;
+    flashSwimlane(laneKey) {
+        const lane = this.swimlanes[laneKey];
+        if (!lane) return;
 
-        // Find the system glow element
-        const systemNodes = this.svg.querySelectorAll('.system-node');
-        systemNodes.forEach(node => {
-            if (node.getAttribute('data-system') === systemKey) {
-                const glow = node.querySelector('.system-glow');
-                if (glow) {
-                    glow.style.transition = 'all 0.3s';
-                    glow.setAttribute('r', '55');
-                    glow.setAttribute('opacity', '0.5');
-                    
-                    setTimeout(() => {
-                        glow.setAttribute('r', '45');
-                        glow.setAttribute('opacity', '0.2');
-                    }, 300);
+        // Create flash effect
+        const flash = this.createSVGElement('rect', {
+            x: '0',
+            y: lane.y,
+            width: '900',
+            height: lane.height,
+            fill: '#ffffff',
+            opacity: '0.3',
+            class: 'lane-flash'
+        });
+        
+        this.svg.appendChild(flash);
+
+        // Fade out
+        let opacity = 0.3;
+        const fade = () => {
+            opacity -= 0.02;
+            flash.setAttribute('opacity', opacity);
+            
+            if (opacity > 0) {
+                requestAnimationFrame(fade);
+            } else {
+                if (flash.parentNode) {
+                    flash.parentNode.removeChild(flash);
                 }
             }
-        });
-    }
-
-    showDataTooltip(x, y, data) {
-        const tooltip = this.createSVGElement('g', {
-            class: 'data-tooltip',
-            transform: `translate(${x}, ${y - 60})`
-        });
-
-        // Background
-        const bg = this.createSVGElement('rect', {
-            x: '-80',
-            y: '0',
-            width: '160',
-            height: '40',
-            rx: '8',
-            fill: '#1e293b',
-            stroke: data.color || '#3b82f6',
-            'stroke-width': '2'
-        });
-
-        // Text
-        const text = this.createSVGElement('text', {
-            x: '0',
-            y: '18',
-            'text-anchor': 'middle',
-            fill: '#ffffff',
-            'font-size': '11',
-            'font-weight': 'bold'
-        });
-        text.textContent = data.label || 'Data received';
-
-        const subtext = this.createSVGElement('text', {
-            x: '0',
-            y: '32',
-            'text-anchor': 'middle',
-            fill: '#94a3b8',
-            'font-size': '9'
-        });
-        subtext.textContent = data.details || '';
-
-        tooltip.appendChild(bg);
-        tooltip.appendChild(text);
-        tooltip.appendChild(subtext);
-
-        this.svg.appendChild(tooltip);
-
-        // Fade out and remove
-        setTimeout(() => {
-            tooltip.style.transition = 'opacity 0.5s';
-            tooltip.style.opacity = '0';
-            setTimeout(() => {
-                if (tooltip.parentNode) {
-                    tooltip.parentNode.removeChild(tooltip);
-                }
-            }, 500);
-        }, 3000);
+        };
+        
+        requestAnimationFrame(fade);
     }
 
     // ============================================
     // EVENT HANDLERS
     // ============================================
 
-    onSystemClick(systemKey) {
-        console.log('System clicked:', systemKey);
-        
-        // Show system details (could expand to show more info)
-        const system = this.systems[systemKey];
-        
-        // Trigger custom event
-        const event = new CustomEvent('architectureSystemClick', {
-            detail: { system: systemKey, systemData: system }
-        });
-        document.dispatchEvent(event);
-    }
-
     setupEventListeners() {
-        // Listen for animation mode changes
-        document.addEventListener('animationModeChange', (e) => {
-            this.animationMode = e.detail.mode;
-        });
-
-        // Listen for data flow events
         document.addEventListener('fhirDataFlow', (e) => {
             const { from, to, data } = e.detail;
-            this.animateDataFlow(from, to, data);
+            
+            // Map system names to swimlanes
+            const laneMap = {
+                'group1': 'rhu', 'group2': 'rhu',
+                'group3': 'hospital', 'group4': 'hospital', 'group5': 'hospital',
+                'shr': 'shr'
+            };
+
+            const fromLane = laneMap[from];
+            const toLane = laneMap[to];
+
+            if (fromLane && toLane) {
+                this.animateDataFlow(fromLane, toLane, data);
+            }
         });
     }
-
-    setAnimationMode(mode) {
-        this.animationMode = mode;
-    }
-
-    // ============================================
-    // UTILITIES
-    // ============================================
 
     createSVGElement(tag, attributes = {}) {
         const element = document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -494,42 +521,6 @@ class ArchitectureView {
             element.setAttribute(key, value);
         });
         return element;
-    }
-
-    clearAnimations() {
-        this.activeAnimations.forEach(anim => {
-            if (anim.element && anim.element.parentNode) {
-                anim.element.parentNode.removeChild(anim.element);
-            }
-        });
-        this.activeAnimations = [];
-    }
-
-    highlightGroup(groupId) {
-        // Highlight a specific group's system
-        const systemKey = `group${groupId}`;
-        this.pulseSystem(systemKey);
-    }
-
-    updateGroupStatus(groupId, status) {
-        // Update visual status of a group
-        const systemKey = `group${groupId}`;
-        const systemNodes = this.svg.querySelectorAll('.system-node');
-        
-        systemNodes.forEach(node => {
-            if (node.getAttribute('data-system') === systemKey) {
-                const circle = node.querySelector('.system-circle');
-                if (circle) {
-                    if (status === 'active') {
-                        circle.setAttribute('stroke-width', '5');
-                    } else if (status === 'complete') {
-                        circle.setAttribute('stroke', '#22c55e');
-                    } else {
-                        circle.setAttribute('stroke-width', '3');
-                    }
-                }
-            }
-        });
     }
 }
 

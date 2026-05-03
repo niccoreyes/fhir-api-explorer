@@ -924,6 +924,140 @@ class WorkshopApp {
     // ============================================
 
     displayResponse(response) {
+        // Check current view to determine display format
+        const isClinicianView = this.state.currentView === 'clinician';
+        
+        if (isClinicianView) {
+            this.displayClinicianResponse(response);
+        } else {
+            this.displayDeveloperResponse(response);
+        }
+    }
+
+    displayClinicianResponse(response) {
+        const isSuccess = response.success !== false;
+        const data = response.data;
+        
+        let cardsHtml = '';
+        
+        if (isSuccess && data) {
+            if (data.resourceType === 'Patient') {
+                // Patient card
+                const name = this.formatPatientName(data.name);
+                const id = data.id || 'Pending';
+                const gender = data.gender || 'Not specified';
+                const birthDate = data.birthDate || 'Not specified';
+                
+                cardsHtml = `
+                    <div class="response-cards">
+                        <div class="patient-card success">
+                            <div class="card-header">
+                                <span class="card-icon">👤</span>
+                                <span class="card-status">✅ Created</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="patient-field">
+                                    <label>Name</label>
+                                    <value>${name}</value>
+                                </div>
+                                <div class="patient-field">
+                                    <label>Patient ID</label>
+                                    <value class="patient-id">${id}</value>
+                                </div>
+                                <div class="patient-field">
+                                    <label>Gender</label>
+                                    <value>${gender}</value>
+                                </div>
+                                <div class="patient-field">
+                                    <label>Birth Date</label>
+                                    <value>${birthDate}</value>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <span class="response-time">⏱️ ${response.responseTime || '0.5s'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (data.resourceType === 'Bundle') {
+                // Search results - multiple patient cards
+                const entries = data.entry || [];
+                const patientEntries = entries.filter(e => e.resource?.resourceType === 'Patient');
+                
+                if (patientEntries.length === 0) {
+                    cardsHtml = `
+                        <div class="response-cards">
+                            <div class="patient-card warning">
+                                <div class="card-header">
+                                    <span class="card-icon">⚠️</span>
+                                    <span class="card-status">No Results</span>
+                                </div>
+                                <div class="card-body">
+                                    <p>No patients found matching your search criteria.</p>
+                                    <p class="hint">Try searching with a different name or wait for other groups to create patients.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const patientCards = patientEntries.map((entry, index) => {
+                        const patient = entry.resource;
+                        const name = this.formatPatientName(patient.name);
+                        const id = patient.id || `Result ${index + 1}`;
+                        
+                        return `
+                            <div class="patient-card ${index === 0 ? 'success' : 'neutral'}">
+                                <div class="card-header">
+                                    <span class="card-icon">👤</span>
+                                    <span class="card-status">${index === 0 ? '✅ Match' : 'Similar'}</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="patient-field">
+                                        <label>Name</label>
+                                        <value>${name}</value>
+                                    </div>
+                                    <div class="patient-field">
+                                        <label>Patient ID</label>
+                                        <value class="patient-id">${id}</value>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    cardsHtml = `
+                        <div class="response-cards">
+                            <div class="search-summary">
+                                <h4>🔍 Search Results</h4>
+                                <p>Found ${patientEntries.length} patient(s)</p>
+                            </div>
+                            ${patientCards}
+                        </div>
+                    `;
+                }
+            }
+        } else {
+            // Error card
+            cardsHtml = `
+                <div class="response-cards">
+                    <div class="patient-card error">
+                        <div class="card-header">
+                            <span class="card-icon">❌</span>
+                            <span class="card-status">Error</span>
+                        </div>
+                        <div class="card-body">
+                            <p>${response.statusText || 'Request failed'}</p>
+                            <p class="hint">Please try again or contact support.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        this.responseContainer.innerHTML = cardsHtml;
+    }
+
+    displayDeveloperResponse(response) {
         const isSuccess = response.success !== false;
         const statusClass = isSuccess ? 'success' : 'error';
         const icon = isSuccess ? '✅' : '❌';
@@ -969,6 +1103,14 @@ class WorkshopApp {
         `;
     }
 
+    formatPatientName(nameArray) {
+        if (!nameArray || !nameArray.length) return 'Unknown';
+        const name = nameArray[0];
+        const given = name.given ? name.given.join(' ') : '';
+        const family = name.family || '';
+        return `${given} ${family}`.trim() || 'Unknown';
+    }
+
     displayError(error) {
         let errorMessage = error.message || 'Request failed';
         let errorHelp = '';
@@ -985,17 +1127,35 @@ class WorkshopApp {
             errorHelp = '💡 Check that your JSON is properly formatted in the Developer view.';
         }
         
-        this.responseContainer.innerHTML = `
-            <div class="response-error">
-                <div class="response-header">
-                    <span class="status-code error">❌ Error</span>
+        // Show card-based error for clinician view
+        if (this.state.currentView === 'clinician') {
+            this.responseContainer.innerHTML = `
+                <div class="response-cards">
+                    <div class="patient-card error">
+                        <div class="card-header">
+                            <span class="card-icon">❌</span>
+                            <span class="card-status">Error</span>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>${errorMessage}</strong></p>
+                            ${errorHelp ? `<p class="hint">${errorHelp}</p>` : ''}
+                        </div>
+                    </div>
                 </div>
-                <div class="error-message">
-                    <strong>${errorMessage}</strong>
-                    ${errorHelp ? `<div class="error-help">${errorHelp}</div>` : ''}
+            `;
+        } else {
+            this.responseContainer.innerHTML = `
+                <div class="response-error">
+                    <div class="response-header">
+                        <span class="status-code error">❌ Error</span>
+                    </div>
+                    <div class="error-message">
+                        <strong>${errorMessage}</strong>
+                        ${errorHelp ? `<div class="error-help">${errorHelp}</div>` : ''}
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
     }
 }
 
