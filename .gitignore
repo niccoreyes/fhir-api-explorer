@@ -123,3 +123,7 @@ out/
 temp/
 tmp/*.png
 test-results/
+
+# Test-related PNG files (screenshots, artifacts)
+*test*.png
+tests/**/*.png
