@@ -461,19 +461,17 @@ class WorkshopApp {
             <div class="form-section">
                 <h3>Patient Information</h3>
                 <div class="form-grid">
-                    <!-- Name Fields -->
+                    <!-- Name Fields - ALL EDITABLE for variations -->
                     <div class="form-group">
                         <label for="familyName">Family Name *</label>
                         <input type="text" id="familyName" name="familyName" 
-                               value="${caseConfig.patient.familyName}" 
-                               ${!isCreate ? 'readonly' : ''}
+                               value="${caseConfig.patient.familyName}"
                                placeholder="Dela Cruz">
                     </div>
                     <div class="form-group">
                         <label for="givenName">Given Name(s) *</label>
                         <input type="text" id="givenName" name="givenName" 
                                value="${caseConfig.patient.givenName}"
-                               ${!isCreate ? 'readonly' : ''}
                                placeholder="Rico Juan">
                     </div>
                     <div class="form-group">
