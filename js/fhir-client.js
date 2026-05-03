@@ -13,6 +13,8 @@ class FHIRClient {
             'Accept': 'application/fhir+json',
             'Content-Type': 'application/fhir+json'
         };
+        this.defaultTimeout = 15000; // 15 seconds default timeout
+        this.maxRetries = 2; // Max retry attempts for transient failures
     }
 
     /**
@@ -73,9 +75,32 @@ class FHIRClient {
     }
 
     /**
-     * Execute a FHIR request
+     * Fetch with timeout support
      */
-    async execute(operation, formData, bodyData = null) {
+    async fetchWithTimeout(url, options, timeout = this.defaultTimeout) {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(id);
+            return response;
+        } catch (error) {
+            clearTimeout(id);
+            if (error.name === 'AbortError') {
+                throw new Error(`Request timeout after ${timeout}ms`);
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Execute a FHIR request with retry logic
+     */
+    async execute(operation, formData, bodyData = null, timeout = this.defaultTimeout, retries = this.maxRetries) {
         const startTime = performance.now();
         
         try {
@@ -103,8 +128,16 @@ class FHIRClient {
                     : JSON.stringify(bodyData, null, 2);
             }
 
-            // Make the request
-            const response = await fetch(url, options);
+            // Make the request with timeout
+            const response = await this.fetchWithTimeout(url, options, timeout);
+            
+            // Retry on transient server errors (503, 504) or rate limiting (429)
+            if ((response.status === 503 || response.status === 504 || response.status === 429) && retries > 0) {
+                const delay = (this.maxRetries - retries + 1) * 2000; // Exponential backoff: 2s, 4s
+                console.warn(`Server error ${response.status}, retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return this.execute(operation, formData, bodyData, timeout, retries - 1);
+            }
             const endTime = performance.now();
             const duration = ((endTime - startTime) / 1000).toFixed(2);
 
@@ -265,143 +298,209 @@ class FHIRClient {
     /**
      * Workshop-specific: Create a patient
      */
-    async createPatient(patientData) {
+    async createPatient(patientData, timeout = this.defaultTimeout) {
         const url = `${this.servers.cdr}/Patient`;
         
         // Ensure patientData is an object, not already stringified
         const body = typeof patientData === 'string' ? patientData : JSON.stringify(patientData);
         
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: this.defaultHeaders,
-            body: body
-        });
-        
-        const data = await response.json();
-        
-        return {
-            success: response.ok,
-            status: response.status,
-            statusText: response.statusText,
-            data: data,
-            responseTime: '0.5s'
-        };
+        try {
+            const response = await this.fetchWithTimeout(url, {
+                method: 'POST',
+                headers: this.defaultHeaders,
+                body: body
+            }, timeout);
+            
+            const data = await response.json();
+            
+            return {
+                success: response.ok,
+                status: response.status,
+                statusText: response.statusText,
+                data: data,
+                responseTime: '0.5s'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                status: 0,
+                statusText: error.message || 'Network Error',
+                data: { error: error.message },
+                responseTime: '0s',
+                isTimeout: error.message.includes('timeout')
+            };
+        }
     }
 
     /**
      * Workshop-specific: Search for a patient by name
      */
-    async searchPatient(familyName, givenName) {
+    async searchPatient(familyName, givenName, timeout = this.defaultTimeout) {
         const params = new URLSearchParams();
         if (familyName) params.append('family', familyName);
         if (givenName) params.append('given', givenName);
         
         const url = `${this.servers.cdr}/Patient?${params.toString()}`;
         
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/fhir+json'
-            }
-        });
-        
-        const data = await response.json();
-        
-        return {
-            success: response.ok,
-            status: response.status,
-            statusText: response.statusText,
-            data: data,
-            responseTime: '0.5s'
-        };
+        try {
+            const response = await this.fetchWithTimeout(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/fhir+json'
+                }
+            }, timeout);
+            
+            const data = await response.json();
+            
+            return {
+                success: response.ok,
+                status: response.status,
+                statusText: response.statusText,
+                data: data,
+                responseTime: '0.5s'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                status: 0,
+                statusText: error.message || 'Network Error',
+                data: { error: error.message },
+                responseTime: '0s',
+                isTimeout: error.message.includes('timeout')
+            };
+        }
     }
 
     /**
      * Generic GET request
      */
-    async get(endpoint) {
+    async get(endpoint, timeout = this.defaultTimeout) {
         const url = endpoint.startsWith('http') ? endpoint : `${this.servers.cdr}${endpoint}`;
         
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/fhir+json'
-            }
-        });
-        
-        const data = await response.json();
-        
-        return {
-            success: response.ok,
-            status: response.status,
-            data: data,
-            responseTime: '0.5s'
-        };
+        try {
+            const response = await this.fetchWithTimeout(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/fhir+json'
+                }
+            }, timeout);
+            
+            const data = await response.json();
+            
+            return {
+                success: response.ok,
+                status: response.status,
+                data: data,
+                responseTime: '0.5s'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                status: 0,
+                statusText: error.message || 'Network Error',
+                data: { error: error.message },
+                responseTime: '0s',
+                isTimeout: error.message.includes('timeout')
+            };
+        }
     }
 
     /**
      * Generic POST request
      */
-    async post(endpoint, body) {
+    async post(endpoint, body, timeout = this.defaultTimeout) {
         const url = endpoint.startsWith('http') ? endpoint : `${this.servers.cdr}${endpoint}`;
         
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: this.defaultHeaders,
-            body: JSON.stringify(body)
-        });
-        
-        const data = await response.json();
-        
-        return {
-            success: response.ok,
-            status: response.status,
-            data: data,
-            responseTime: '0.5s'
-        };
+        try {
+            const response = await this.fetchWithTimeout(url, {
+                method: 'POST',
+                headers: this.defaultHeaders,
+                body: JSON.stringify(body)
+            }, timeout);
+            
+            const data = await response.json();
+            
+            return {
+                success: response.ok,
+                status: response.status,
+                data: data,
+                responseTime: '0.5s'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                status: 0,
+                statusText: error.message || 'Network Error',
+                data: { error: error.message },
+                responseTime: '0s',
+                isTimeout: error.message.includes('timeout')
+            };
+        }
     }
 
     /**
      * Generic PUT request
      */
-    async put(endpoint, body) {
+    async put(endpoint, body, timeout = this.defaultTimeout) {
         const url = endpoint.startsWith('http') ? endpoint : `${this.servers.cdr}${endpoint}`;
         
-        const response = await fetch(url, {
-            method: 'PUT',
-            headers: this.defaultHeaders,
-            body: JSON.stringify(body)
-        });
-        
-        const data = await response.json();
-        
-        return {
-            success: response.ok,
-            status: response.status,
-            data: data,
-            responseTime: '0.5s'
-        };
+        try {
+            const response = await this.fetchWithTimeout(url, {
+                method: 'PUT',
+                headers: this.defaultHeaders,
+                body: JSON.stringify(body)
+            }, timeout);
+            
+            const data = await response.json();
+            
+            return {
+                success: response.ok,
+                status: response.status,
+                data: data,
+                responseTime: '0.5s'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                status: 0,
+                statusText: error.message || 'Network Error',
+                data: { error: error.message },
+                responseTime: '0s',
+                isTimeout: error.message.includes('timeout')
+            };
+        }
     }
 
     /**
      * Generic DELETE request
      */
-    async delete(endpoint) {
+    async delete(endpoint, timeout = this.defaultTimeout) {
         const url = endpoint.startsWith('http') ? endpoint : `${this.servers.cdr}${endpoint}`;
         
-        const response = await fetch(url, {
-            method: 'DELETE',
-            headers: {
-                'Accept': 'application/fhir+json'
-            }
-        });
-        
-        return {
-            success: response.ok,
-            status: response.status,
-            data: {},
-            responseTime: '0.5s'
-        };
+        try {
+            const response = await this.fetchWithTimeout(url, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/fhir+json'
+                }
+            }, timeout);
+            
+            return {
+                success: response.ok,
+                status: response.status,
+                data: {},
+                responseTime: '0.5s'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                status: 0,
+                statusText: error.message || 'Network Error',
+                data: { error: error.message },
+                responseTime: '0s',
+                isTimeout: error.message.includes('timeout')
+            };
+        }
     }
 }
 

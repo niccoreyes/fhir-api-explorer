@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "27f4d6d4-2612-422c-af6f-c408a4e6e508",
-    "name": "FAHLA 2026 WS3 — FHIR Exploration (Rico)",
-    "description": "Postman collection for FAHLA 2026 Workshop 3: Interoperability — Challenges and Solutions.\n\nTarget: HAPI FHIR public test server ([https://cdr.fhirlab.net/fhir](https://cdr.fhirlab.net/fhir)).\n\nFlow:\n\n1. Server CapabilityStatement — what can this server do?\n    \n2. Search patients by name — the name-collision problem\n    \n3. Retrieve a Patient resource — what FHIR looks like\n    \n4. Search observations — filtering by code (LOINC)\n    \n5. POST Rico's Patient resource — create on a scratch server\n    \n6. GET Rico back — verify round-trip\n    \n7. Search by identifier system — the identifier namespace problem (Scenario 1)\n    \n\nAll requests use the public HAPI test server. Data you POST is visible to everyone and may be wiped at any time. DO NOT post real patient data.",
+    "name": "Aklan FHIR Fundamentals WS3 — FHIR Exploration (Rico)",
+    "description": "Postman collection for Aklan FHIR Fundamentals Workshop 3: Interoperability — Challenges and Solutions.\n\nTarget: HAPI FHIR public test server ([https://cdr.fhirlab.net/fhir](https://cdr.fhirlab.net/fhir)).\n\nFlow:\n\n1. Server CapabilityStatement — what can this server do?\n    \n2. Search patients by name — the name-collision problem\n    \n3. Retrieve a Patient resource — what FHIR looks like\n    \n4. Search observations — filtering by code (LOINC)\n    \n5. POST Rico's Patient resource — create on a scratch server\n    \n6. GET Rico back — verify round-trip\n    \n7. Search by identifier system — the identifier namespace problem (Scenario 1)\n    \n\nAll requests use the public HAPI test server. Data you POST is visible to everyone and may be wiped at any time. DO NOT post real patient data.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "32726239"
   },
@@ -140,7 +140,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"resourceType\": \"Patient\",\n  \"meta\": {\n    \"tag\": [\n      {\n        \"system\": \"http://fahla2026.example.org/workshop\",\n        \"code\": \"training-sample\",\n        \"display\": \"FAHLA WS3 training — not real patient data\"\n      }\n    ]\n  },\n  \"identifier\": [\n    {\n      \"use\": \"official\",\n      \"system\": \"http://ntp.doh.gov.ph/ids\",\n      \"value\": \"PH-TB-2026-0142\"\n    }\n  ],\n  \"name\": [\n    {\n      \"use\": \"official\",\n      \"family\": \"Dela Cruz\",\n      \"given\": [\"Rico\"]\n    }\n  ],\n  \"gender\": \"male\",\n  \"birthDate\": \"1992-03-15\",\n  \"address\": [\n    {\n      \"use\": \"home\",\n      \"line\": [\"Barangay Malaya\"],\n      \"city\": \"Quezon City\",\n      \"country\": \"PH\"\n    }\n  ]\n}"
+          "raw": "{\n  \"resourceType\": \"Patient\",\n  \"meta\": {\n    \"tag\": [\n      {\n        \"system\": \"http://workshop.fhir.example.org\",\n        \"code\": \"training-sample\",\n        \"display\": \"Aklan FHIR Fundamentals training — not real patient data\"\n      }\n    ]\n  },\n  \"identifier\": [\n    {\n      \"use\": \"official\",\n      \"system\": \"http://ntp.doh.gov.ph/ids\",\n      \"value\": \"PH-TB-2026-0142\"\n    }\n  ],\n  \"name\": [\n    {\n      \"use\": \"official\",\n      \"family\": \"Dela Cruz\",\n      \"given\": [\"Rico\"]\n    }\n  ],\n  \"gender\": \"male\",\n  \"birthDate\": \"1992-03-15\",\n  \"address\": [\n    {\n      \"use\": \"home\",\n      \"line\": [\"Barangay Malaya\"],\n      \"city\": \"Quezon City\",\n      \"country\": \"PH\"\n    }\n  ]\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/Patient?identifier=http://ntp.doh.gov.ph/ids|PH-TB-2026-0142",

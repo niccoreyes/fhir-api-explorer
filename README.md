@@ -1,6 +1,6 @@
-# FHIR API Explorer - FAHLA 2026
+# FHIR API Explorer - Aklan FHIR Fundamentals 2026
 
-An interactive web application for exploring FHIR APIs, designed for both clinicians and developers. Built for the FAHLA 2026 Workshop 3 on FHIR Interoperability.
+An interactive web application for exploring FHIR APIs, designed for both clinicians and developers. Built for the Aklan FHIR Fundamentals 2026 Workshop 3 on FHIR Interoperability.
 
 ## Features
 
@@ -169,13 +169,13 @@ The "Search Observations" operation demonstrates how LOINC codes enable semantic
 
 ## Credits
 
-- **Original Postman Collection**: FAHLA 2026 Workshop 3 by FHIRLAB
+- **Original Postman Collection**: Aklan FHIR Fundamentals 2026 Workshop 3 by FHIRLAB
 - **FHIR Servers**: cdr.fhirlab.net and tx.fhirlab.net (HAPI FHIR test servers)
 - **Design**: Clinical theme with accessibility in mind
 
 ## License
 
-This is an educational tool for the FAHLA 2026 workshop. Not for production use with real patient data.
+This is an educational tool for the Aklan FHIR Fundamentals 2026 workshop. Not for production use with real patient data.
 
 ## Safety Warning
 

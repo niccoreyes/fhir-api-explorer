@@ -1,6 +1,6 @@
 // ============================================
 // FHIR Operations Configuration
-// Based on FAHLA 2026 Postman Collection
+// Based on Aklan FHIR Fundamentals 2026 Postman Collection
 // ============================================
 
 const FHIR_OPERATIONS = {
@@ -37,9 +37,9 @@ const FHIR_OPERATIONS = {
             meta: {
                 tag: [
                     {
-                        system: 'http://fahla2026.example.org/workshop',
+                        system: 'http://workshop.fhir.example.org',
                         code: 'training-sample',
-                        display: 'FAHLA WS3 training — not real patient data'
+                        display: 'Aklan FHIR Fundamentals training — not real patient data'
                     }
                 ]
             },

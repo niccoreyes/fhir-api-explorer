@@ -170,7 +170,7 @@ python3 -m http.server 8080
 
 ## 📝 Recent Commits
 
-1. `feat: Implement FAHLA 2026 Workshop Platform` - Initial implementation
+1. `feat: Implement Aklan FHIR Fundamentals 2026 Workshop Platform` - Initial implementation
 2. `fix: Resolve double-stringification issue` - FHIR patient creation fix
 3. `fix: Initialize managers before loading saved session` - Null reference fix
 4. `fix: Remove WebSocket support` - Clean polling approach

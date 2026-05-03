@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 
-test.describe('FAHLA 2026 Workshop Platform', () => {
+test.describe('Aklan FHIR Fundamentals 2026 Workshop Platform', () => {
   
   test.beforeEach(async ({ page }) => {
     // Clear session storage before each test
@@ -11,14 +11,14 @@ test.describe('FAHLA 2026 Workshop Platform', () => {
 
   test.describe('Entry Gate', () => {
     test('should display entry gate with title', async ({ page }) => {
-      await expect(page.locator('h1')).toContainText('FAHLA 2026');
+      await expect(page.locator('.entry-header h1')).toContainText('Aklan FHIR Fundamentals Training');
       await expect(page.locator('.subtitle')).toContainText('FHIR Interoperability Workshop');
     });
 
     test('should show case selection cards', async ({ page }) => {
       await expect(page.locator('.case-card')).toHaveCount(2);
-      await expect(page.locator('[data-case="case1"]')).toContainText('Unique Name Success');
-      await expect(page.locator('[data-case="case2"]')).toContainText('Common Name Challenge');
+      await expect(page.locator('.case-card[data-case="case1"]')).toContainText('Unique Name Success');
+      await expect(page.locator('.case-card[data-case="case2"]')).toContainText('Common Name Challenge');
     });
 
     test('should navigate to group selection after selecting case', async ({ page }) => {
@@ -35,7 +35,7 @@ test.describe('FAHLA 2026 Workshop Platform', () => {
 
   test.describe('Group Selection', () => {
     test.beforeEach(async ({ page }) => {
-      await page.click('[data-case="case1"]');
+      await page.click('.case-card[data-case="case1"]');
     });
 
     test('should display all 5 groups', async ({ page }) => {
@@ -44,21 +44,21 @@ test.describe('FAHLA 2026 Workshop Platform', () => {
     });
 
     test('should show correct task for Group 1 in Case 1', async ({ page }) => {
-      const group1 = page.locator('[data-group="1"]');
+      const group1 = page.locator('.group-card[data-group="1"]');
       await expect(group1).toContainText('Group 1');
       await expect(group1).toContainText('Create');
       await expect(group1).toContainText('Rural Health Unit');
     });
 
     test('should show correct task for Group 3 in Case 1', async ({ page }) => {
-      const group3 = page.locator('[data-group="3"]');
+      const group3 = page.locator('.group-card[data-group="3"]');
       await expect(group3).toContainText('Group 3');
       await expect(group3).toContainText('Search');
       await expect(group3).toContainText('Provincial Hospital');
     });
 
     test('should navigate to view selection after selecting group', async ({ page }) => {
-      await page.click('[data-group="1"]');
+      await page.click('.group-card[data-group="1"]');
       await expect(page.locator('#viewSelection')).toBeVisible();
     });
 
@@ -72,8 +72,8 @@ test.describe('FAHLA 2026 Workshop Platform', () => {
 
   test.describe('View Selection', () => {
     test.beforeEach(async ({ page }) => {
-      await page.click('[data-case="case1"]');
-      await page.click('[data-group="1"]');
+      await page.click('.case-card[data-case="case1"]');
+      await page.click('.group-card[data-group="1"]');
     });
 
     test('should show all three view modes', async ({ page }) => {
@@ -93,8 +93,8 @@ test.describe('FAHLA 2026 Workshop Platform', () => {
 
   test.describe('Workshop App - Participant View', () => {
     test.beforeEach(async ({ page }) => {
-      await page.click('[data-case="case1"]');
-      await page.click('[data-group="1"]');
+      await page.click('.case-card[data-case="case1"]');
+      await page.click('.group-card[data-group="1"]');
       await page.click('[data-mode="clinician"]');
       await page.click('#enterWorkshop');
     });
@@ -148,8 +148,8 @@ test.describe('FAHLA 2026 Workshop Platform', () => {
 
   test.describe('Bidirectional Sync', () => {
     test.beforeEach(async ({ page }) => {
-      await page.click('[data-case="case1"]');
-      await page.click('[data-group="1"]');
+      await page.click('.case-card[data-case="case1"]');
+      await page.click('.group-card[data-group="1"]');
       await page.click('[data-mode="clinician"]');
       await page.click('#enterWorkshop');
     });
@@ -173,7 +173,7 @@ test.describe('FAHLA 2026 Workshop Platform', () => {
 
   test.describe('Facilitator Mode', () => {
     test('should allow entering as facilitator', async ({ page }) => {
-      await page.click('[data-case="case1"]');
+      await page.click('.case-card[data-case="case1"]');
       await page.click('#selectFacilitator');
       
       await expect(page.locator('#workshopApp')).toBeVisible();
@@ -181,7 +181,7 @@ test.describe('FAHLA 2026 Workshop Platform', () => {
     });
 
     test('should show all groups in facilitator dashboard', async ({ page }) => {
-      await page.click('[data-case="case1"]');
+      await page.click('.case-card[data-case="case1"]');
       await page.click('#selectFacilitator');
       
       const dashboardCards = await page.locator('.dashboard-card').count();
@@ -192,8 +192,8 @@ test.describe('FAHLA 2026 Workshop Platform', () => {
   test.describe('Mobile Responsive', () => {
     test('should show mobile navigation on small screens', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
-      await page.click('[data-case="case1"]');
-      await page.click('[data-group="1"]');
+      await page.click('.case-card[data-case="case1"]');
+      await page.click('.group-card[data-group="1"]');
       await page.click('[data-mode="clinician"]');
       await page.click('#enterWorkshop');
       
@@ -202,8 +202,8 @@ test.describe('FAHLA 2026 Workshop Platform', () => {
 
     test('should switch views via mobile nav', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
-      await page.click('[data-case="case1"]');
-      await page.click('[data-group="1"]');
+      await page.click('.case-card[data-case="case1"]');
+      await page.click('.group-card[data-group="1"]');
       await page.click('[data-mode="clinician"]');
       await page.click('#enterWorkshop');
       
@@ -214,21 +214,21 @@ test.describe('FAHLA 2026 Workshop Platform', () => {
 
   test.describe('Case 2 - Common Name Challenge', () => {
     test('should show correct group assignments for Case 2', async ({ page }) => {
-      await page.click('[data-case="case2"]');
+      await page.click('.case-card[data-case="case2"]');
       
       // Group 1 should be SEARCH in Case 2 (swapped)
-      const group1 = page.locator('[data-group="1"]');
+      const group1 = page.locator('.group-card[data-group="1"]');
       await expect(group1).toContainText('Search');
       
       // Group 3 should be CREATE in Case 2
-      const group3 = page.locator('[data-group="3"]');
+      const group3 = page.locator('.group-card[data-group="3"]');
       await expect(group3).toContainText('Create');
     });
 
     test('should show Jose Dimasalang for Case 2', async ({ page }) => {
-      await page.click('[data-case="case2"]');
+      await page.click('.case-card[data-case="case2"]');
       
-      const group1 = page.locator('[data-group="1"]');
+      const group1 = page.locator('.group-card[data-group="1"]');
       await expect(group1).toContainText('Jose Dimasalang');
     });
   });

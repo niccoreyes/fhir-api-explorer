@@ -1,5 +1,5 @@
 // ============================================
-// FAHLA 2026 Workshop Configuration
+// Aklan FHIR Fundamentals 2026 Workshop Configuration
 // ============================================
 
 const WORKSHOP_CONFIG = {
@@ -16,6 +16,8 @@ const WORKSHOP_CONFIG = {
                 name: 'Rico Dela Cruz',
                 familyName: 'Dela Cruz',
                 givenName: 'Rico',
+                gender: 'male',
+                birthDate: '1992-03-15',
                 id: 'UNIQUE_ID',
                 description: 'Unique name, easy to identify'
             },
@@ -40,6 +42,8 @@ const WORKSHOP_CONFIG = {
                 name: 'Jose Dimasalang',
                 familyName: 'Dimasalang',
                 givenName: 'Jose',
+                gender: 'male',
+                birthDate: '1985-07-20',
                 id: 'NATIONAL_ID',
                 description: 'Common name, potential duplicates'
             },

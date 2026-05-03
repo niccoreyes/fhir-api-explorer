@@ -1,8 +1,8 @@
 #!/bin/bash
-# FAHLA 2026 Workshop Platform - Curl Tests
+# Aklan FHIR Fundamentals 2026 Workshop Platform - Curl Tests
 
 echo "================================"
-echo "FAHLA Workshop Platform Tests"
+echo "Aklan FHIR Fundamentals Workshop Platform Tests"
 echo "================================"
 echo ""
 

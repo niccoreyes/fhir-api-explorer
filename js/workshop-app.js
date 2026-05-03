@@ -12,7 +12,11 @@ class WorkshopApp {
             currentView: 'clinician',
             taskProgress: 0,
             taskComplete: false,
-            patientData: null
+            patientData: null,
+            lastResponse: null,  // Store last response for view switching
+            isExecuting: false,  // Prevent double-clicks
+            lastRequestTime: 0,  // Rate limiting
+            minRequestInterval: 2000  // Min 2 seconds between requests (100 users / 5 groups = 20 users per group, staggered)
         };
 
         // Managers
@@ -174,6 +178,50 @@ class WorkshopApp {
         
         // Reset
         this.resetWorkshop?.addEventListener('click', () => this.resetSession());
+        
+        // Cross-tab sync via storage event
+        window.addEventListener('storage', (e) => this.handleStorageEvent(e));
+        
+        // Check for reset when window regains focus
+        window.addEventListener('focus', () => this.checkForReset());
+    }
+    
+    /**
+     * Handle storage events for cross-tab synchronization
+     */
+    handleStorageEvent(e) {
+        // Handle group status updates from other tabs
+        if (e.key && e.key.startsWith('workshop_group_') && e.key.endsWith('_status')) {
+            // Update group status display if we're in facilitator mode
+            if (this.state.currentGroup === 'facilitator' && this.groupStatusSync) {
+                this.groupStatusSync.fetchGroupStatusFromFHIR();
+            }
+        }
+        
+        // Handle session reset from another tab
+        if (e.key === 'workshop_session_reset' && e.newValue) {
+            const resetTime = parseInt(e.newValue, 10);
+            const now = Date.now();
+            // Only reload if reset happened in last 5 seconds (avoid stale resets)
+            if (now - resetTime < 5000) {
+                window.location.reload();
+            }
+        }
+    }
+    
+    /**
+     * Check for reset from other tabs when window gains focus
+     */
+    checkForReset() {
+        const resetTime = localStorage.getItem('workshop_session_reset');
+        if (resetTime) {
+            const resetTimestamp = parseInt(resetTime, 10);
+            const now = Date.now();
+            // If reset happened in last 5 seconds and we have a session, reload
+            if (now - resetTimestamp < 5000 && sessionStorage.getItem('workshop_case')) {
+                window.location.reload();
+            }
+        }
     }
 
     // ============================================
@@ -181,9 +229,12 @@ class WorkshopApp {
     // ============================================
 
     loadSavedSession() {
-        const savedCase = sessionStorage.getItem('fahla_case');
-        const savedGroup = sessionStorage.getItem('fahla_group');
-        const savedView = sessionStorage.getItem('fahla_view');
+        const savedCase = sessionStorage.getItem('workshop_case');
+        const savedGroup = sessionStorage.getItem('workshop_group');
+        const savedView = sessionStorage.getItem('workshop_view');
+        const savedTaskComplete = sessionStorage.getItem('workshop_task_complete');
+        const savedTaskProgress = sessionStorage.getItem('workshop_task_progress');
+        const savedLastResponse = sessionStorage.getItem('workshop_last_response');
         
         if (savedCase && savedGroup) {
             this.state.currentCase = savedCase;
@@ -194,29 +245,89 @@ class WorkshopApp {
                 this.state.currentView = savedView;
             }
             
+            if (savedTaskComplete === 'true') {
+                this.state.taskComplete = true;
+                this.state.taskProgress = parseInt(savedTaskProgress || '100', 10);
+            }
+            
+            if (savedLastResponse) {
+                try {
+                    this.state.lastResponse = JSON.parse(savedLastResponse);
+                } catch (e) {
+                    console.warn('Failed to restore last response:', e);
+                }
+            }
+            
             // Show workshop directly
             this.showWorkshopApp();
             this.setupWorkshopUI();
+            
+            // Restore task UI state if task was complete
+            if (this.state.taskComplete) {
+                this.restoreTaskUIState();
+            }
+        }
+    }
+    
+    restoreTaskUIState() {
+        if (this.taskStatus) {
+            this.taskStatus.textContent = '✅ Complete';
+            this.taskStatus.className = 'task-status complete';
+        }
+        if (this.taskProgressFill) {
+            this.taskProgressFill.style.width = '100%';
+        }
+        if (this.taskProgressText) {
+            this.taskProgressText.textContent = '100%';
+        }
+        
+        // Re-display last response if available
+        if (this.state.lastResponse && this.responseContainer) {
+            this.displayResponse(this.state.lastResponse);
         }
     }
 
     saveSession() {
-        sessionStorage.setItem('fahla_case', this.state.currentCase);
-        sessionStorage.setItem('fahla_group', this.state.currentGroup);
-        sessionStorage.setItem('fahla_view', this.state.currentView);
+        sessionStorage.setItem('workshop_case', this.state.currentCase);
+        sessionStorage.setItem('workshop_group', this.state.currentGroup);
+        sessionStorage.setItem('workshop_view', this.state.currentView);
+        sessionStorage.setItem('workshop_task_complete', this.state.taskComplete);
+        sessionStorage.setItem('workshop_task_progress', this.state.taskProgress);
+        if (this.state.lastResponse) {
+            sessionStorage.setItem('workshop_last_response', JSON.stringify(this.state.lastResponse));
+        }
     }
 
     resetSession() {
-        sessionStorage.removeItem('fahla_case');
-        sessionStorage.removeItem('fahla_group');
-        sessionStorage.removeItem('fahla_view');
+        // Stop all async operations first
+        if (this.groupStatusSync) {
+            this.groupStatusSync.destroy();
+        }
         
+        // Clear any pending debounce timers
+        if (this.syncManager && this.syncManager.debounceTimer) {
+            clearTimeout(this.syncManager.debounceTimer);
+        }
+        
+        // Reset executing flag
+        this.state.isExecuting = false;
+        
+        // Clear session storage
+        sessionStorage.removeItem('workshop_case');
+        sessionStorage.removeItem('workshop_group');
+        sessionStorage.removeItem('workshop_view');
+        
+        // Reset state
         this.state.currentCase = null;
         this.state.currentGroup = null;
         this.state.currentTask = null;
         this.state.currentView = 'clinician';
         this.state.taskProgress = 0;
         this.state.taskComplete = false;
+        this.state.lastResponse = null;
+        
+        // Notify other tabs about reset with timestamp (they'll check this on focus)
+        localStorage.setItem('workshop_session_reset', Date.now().toString());
         
         this.showEntryGate();
         this.showCaseSelection();
@@ -428,10 +539,12 @@ class WorkshopApp {
         // Setup developer view
         this.setupDeveloperView();
         
-        // Initialize sync
+        // Initialize sync with all patient data including gender and birthDate
         this.syncManager.init({
             familyName: caseConfig.patient.familyName,
-            givenName: caseConfig.patient.givenName
+            givenName: caseConfig.patient.givenName,
+            gender: caseConfig.patient.gender,
+            birthDate: caseConfig.patient.birthDate
         });
         
         // Update my status
@@ -499,20 +612,21 @@ class WorkshopApp {
                         </select>
                     </div>
                     
-                    <!-- Gender and Birth -->
+                    <!-- Gender and Birth - PRE-FILLED from case config -->
                     <div class="form-group">
                         <label for="gender">Gender *</label>
                         <select id="gender" name="gender" required>
                             <option value="">Select...</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                            <option value="unknown">Unknown</option>
+                            <option value="male" ${caseConfig.patient.gender === 'male' ? 'selected' : ''}>Male</option>
+                            <option value="female" ${caseConfig.patient.gender === 'female' ? 'selected' : ''}>Female</option>
+                            <option value="other" ${caseConfig.patient.gender === 'other' ? 'selected' : ''}>Other</option>
+                            <option value="unknown" ${caseConfig.patient.gender === 'unknown' ? 'selected' : ''}>Unknown</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="birthDate">Birth Date *</label>
-                        <input type="date" id="birthDate" name="birthDate" required>
+                        <input type="date" id="birthDate" name="birthDate" 
+                               value="${caseConfig.patient.birthDate || ''}" required>
                     </div>
                     
                     <!-- Contact Information -->
@@ -700,13 +814,18 @@ class WorkshopApp {
         });
     }
 
-    updateSyncStatus(status) {
+    updateSyncStatus(status, message = null) {
         const indicator = this.syncStatus?.querySelector('.sync-indicator');
         const text = this.syncStatus?.querySelector('.sync-text');
         
         if (!indicator || !text) return;
         
         indicator.className = 'sync-indicator ' + status;
+        
+        if (message) {
+            text.textContent = message;
+            return;
+        }
         
         switch (status) {
             case 'synced':
@@ -717,6 +836,12 @@ class WorkshopApp {
                 break;
             case 'error':
                 text.textContent = 'Sync error';
+                break;
+            case 'sending':
+                text.textContent = 'Sending to FHIR server...';
+                break;
+            case 'polling':
+                text.textContent = 'Checking server status...';
                 break;
         }
     }
@@ -810,6 +935,11 @@ class WorkshopApp {
             v.classList.toggle('active', v.id === view + 'View');
         });
         
+        // Re-render last response when switching to clinician or developer view
+        if ((view === 'clinician' || view === 'developer') && this.state.lastResponse) {
+            this.displayResponse(this.state.lastResponse);
+        }
+        
         // Save preference
         this.saveSession();
         
@@ -824,8 +954,50 @@ class WorkshopApp {
     // ============================================
 
     async executeTask() {
+        // DEBOUNCE: Prevent double-clicks
+        if (this.state.isExecuting) {
+            console.log('Task already executing, ignoring double-click');
+            return;
+        }
+        
+        // RATE LIMITING: Ensure minimum interval between requests
+        const now = Date.now();
+        const timeSinceLastRequest = now - this.state.lastRequestTime;
+        if (timeSinceLastRequest < this.state.minRequestInterval) {
+            const waitTime = this.state.minRequestInterval - timeSinceLastRequest;
+            console.log(`Rate limit: waiting ${waitTime}ms before next request`);
+            this.showToast(`Please wait ${Math.ceil(waitTime / 1000)} seconds before submitting again`, 'warning');
+            return;
+        }
+        
         const task = this.state.currentTask;
         const caseConfig = getCaseInfo(this.state.currentCase);
+        
+        // NULL CHECK: Ensure task is assigned
+        if (!task) {
+            console.error('No task assigned to this group');
+            this.displayError(new Error('No task assigned. Please select a case and group first.'));
+            return;
+        }
+        
+        // FORM VALIDATION: Validate required fields before submission
+        const validation = this.validateFormData();
+        if (!validation.valid) {
+            const errorMessage = 'Please fix the following errors:\n• ' + validation.errors.join('\n• ');
+            this.showToast(errorMessage, 'error', 8000);
+            return;
+        }
+        
+        // Update last request time for rate limiting
+        this.state.lastRequestTime = now;
+        
+        // Set executing flag and show loading state
+        this.state.isExecuting = true;
+        const executeBtn = document.getElementById('executeTaskBtn');
+        if (executeBtn) {
+            executeBtn.disabled = true;
+            executeBtn.innerHTML = '<span>⏳</span> Processing...';
+        }
         
         // SAFETY CHECK: Ensure managers are initialized
         if (!this.fhirClient) {
@@ -871,6 +1043,9 @@ class WorkshopApp {
             }));
         }
         
+        // Show loading state
+        this.showLoadingState(task.type === 'create' ? 'Creating patient...' : 'Searching patients...');
+        
         try {
             // Build request
             const formData = this.syncManager.getState().formData;
@@ -884,18 +1059,25 @@ class WorkshopApp {
                 if (!body.meta) body.meta = {};
                 if (!body.meta.tag) body.meta.tag = [];
                 
-                // Add workshop tag with group info
+                // Add workshop tag with group info (for facilitator search)
                 body.meta.tag.push({
-                    system: 'http://fahla.workshop/2026',
+                    system: 'http://workshop.fhir.example.org/2026',
                     code: `group${this.state.currentGroup}-${this.state.currentCase}-create`,
                     display: `Group ${this.state.currentGroup} - ${this.state.currentCase}`
+                });
+                
+                // Add global workshop tag for facilitator dashboard search
+                body.meta.tag.push({
+                    system: 'http://workshop.fhir.example.org/2026',
+                    code: 'workshop-2026',
+                    display: 'Aklan FHIR Fundamentals 2026'
                 });
                 
                 // Add identifier with group info
                 if (!body.identifier) body.identifier = [];
                 body.identifier.push({
                     use: 'secondary',
-                    system: 'http://fahla.workshop/group',
+                    system: 'http://workshop.fhir.example.org/group',
                     value: this.state.currentGroup.toString()
                 });
                 
@@ -941,6 +1123,10 @@ class WorkshopApp {
             );
             
             this.displayError(error);
+        } finally {
+            // Always reset executing flag and hide loading state
+            this.state.isExecuting = false;
+            this.hideLoadingState();
         }
     }
 
@@ -989,6 +1175,9 @@ class WorkshopApp {
     // ============================================
 
     displayResponse(response) {
+        // Store response for view switching
+        this.state.lastResponse = response;
+        
         // Check current view to determine display format
         const isClinicianView = this.state.currentView === 'clinician';
         
@@ -1176,6 +1365,44 @@ class WorkshopApp {
         return `${given} ${family}`.trim() || 'Unknown';
     }
 
+    /**
+     * Show loading state on execute button
+     */
+    showLoadingState(message = 'Processing...') {
+        const executeBtn = document.getElementById('executeTaskBtn');
+        if (executeBtn) {
+            executeBtn.disabled = true;
+            executeBtn.innerHTML = `<span class="spinner">⏳</span> ${message}`;
+            executeBtn.classList.add('loading');
+        }
+        
+        // Update sync status
+        this.updateSyncStatus('sending', 'Sending to FHIR server...');
+        
+        // Show loading indicator in response area
+        if (this.responseContainer) {
+            this.responseContainer.innerHTML = `
+                <div class="loading-indicator">
+                    <div class="spinner"></div>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+    }
+    
+    /**
+     * Hide loading state and restore button
+     */
+    hideLoadingState() {
+        const executeBtn = document.getElementById('executeTaskBtn');
+        if (executeBtn) {
+            executeBtn.disabled = false;
+            const isCreate = this.state.currentTask?.type === 'create';
+            executeBtn.innerHTML = `<span>🚀</span> ${isCreate ? 'Create Patient' : 'Search Patient'}`;
+            executeBtn.classList.remove('loading');
+        }
+    }
+
     displayError(error) {
         let errorMessage = error.message || 'Request failed';
         let errorHelp = '';
@@ -1221,6 +1448,99 @@ class WorkshopApp {
                 </div>
             `;
         }
+    }
+
+    // ============================================
+    // TOAST NOTIFICATIONS
+    // ============================================
+
+    /**
+     * Show a toast notification
+     * @param {string} message - Message to display
+     * @param {string} type - Type: 'info', 'success', 'warning', 'error'
+     * @param {number} duration - Duration in ms (default 5000)
+     */
+    showToast(message, type = 'info', duration = 5000) {
+        const container = document.getElementById('toastContainer');
+        if (!container) {
+            console.warn('Toast container not found');
+            return;
+        }
+
+        const icons = {
+            info: 'ℹ️',
+            success: '✅',
+            warning: '⚠️',
+            error: '❌'
+        };
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <span class="toast-icon">${icons[type]}</span>
+            <span class="toast-message">${message}</span>
+            <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+        `;
+
+        container.appendChild(toast);
+
+        // Auto remove after duration
+        setTimeout(() => {
+            toast.classList.add('hiding');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
+    // ============================================
+    // FORM VALIDATION
+    // ============================================
+
+    /**
+     * Validate form data before submission
+     * @returns {Object} - { valid: boolean, errors: string[] }
+     */
+    validateFormData() {
+        const errors = [];
+        const formData = this.syncManager?.getState().formData || {};
+        const task = this.state.currentTask;
+
+        if (!task) {
+            errors.push('No task assigned');
+            return { valid: false, errors };
+        }
+
+        if (task.type === 'create') {
+            // Required fields for create
+            if (!formData.familyName || formData.familyName.trim() === '') {
+                errors.push('Family Name is required');
+            }
+            if (!formData.givenName || formData.givenName.trim() === '') {
+                errors.push('Given Name is required');
+            }
+            if (!formData.gender) {
+                errors.push('Gender is required');
+            }
+            if (!formData.birthDate) {
+                errors.push('Birth Date is required');
+            } else {
+                // Validate date format
+                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                if (!dateRegex.test(formData.birthDate)) {
+                    errors.push('Birth Date must be in format YYYY-MM-DD');
+                }
+            }
+        } else {
+            // Required fields for search
+            if ((!formData.familyName || formData.familyName.trim() === '') &&
+                (!formData.givenName || formData.givenName.trim() === '')) {
+                errors.push('At least one name field is required for search');
+            }
+        }
+
+        return {
+            valid: errors.length === 0,
+            errors: errors
+        };
     }
 }
 

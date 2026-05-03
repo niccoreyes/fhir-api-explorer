@@ -184,9 +184,9 @@ class WorkshopSyncManager {
             resourceType: 'Patient',
             meta: {
                 tag: [{
-                    system: 'http://fahla.workshop/2026',
+                    system: 'http://workshop.fhir.example.org/2026',
                     code: 'workshop-demo',
-                    display: 'FAHLA Workshop Demo'
+                    display: 'Aklan FHIR Fundamentals Demo'
                 }]
             }
         };
@@ -216,7 +216,7 @@ class WorkshopSyncManager {
                     }],
                     text: typeInfo.text
                 },
-                system: `http://fahla.workshop/${idType.toLowerCase()}`,
+                system: `http://workshop.fhir.example.org/${idType.toLowerCase()}`,
                 value: formData.identifier
             }];
         }
@@ -498,7 +498,7 @@ class GroupStatusSync {
         try {
             // Query FHIR server for patients created by workshop participants
             // We can identify them by the tag we add to resources
-            const searchUrl = '/Patient?_tag=fahla-workshop-2026&_count=100';
+            const searchUrl = '/Patient?_tag=http://workshop.fhir.example.org/2026|workshop-2026&_count=100';
             const response = await this.fhirClient.get(searchUrl);
             
             if (response.success && response.data && response.data.entry) {
@@ -541,17 +541,18 @@ class GroupStatusSync {
             // Check identifier for group tag
             if (patient.identifier) {
                 const workshopId = patient.identifier.find(id => 
-                    id.system === 'http://fahla.workshop/group'
+                    id.system === 'http://workshop.fhir.example.org/group'
                 );
                 if (workshopId) {
                     groupId = parseInt(workshopId.value);
                 }
             }
             
-            // Check tags
+            // Check tags - look specifically for group tag (starts with 'group')
             if (patient.meta && patient.meta.tag) {
                 const workshopTag = patient.meta.tag.find(tag => 
-                    tag.system === 'http://fahla.workshop/2026'
+                    tag.system === 'http://workshop.fhir.example.org/2026' &&
+                    tag.code && tag.code.startsWith('group')
                 );
                 if (workshopTag && workshopTag.code) {
                     // Tag format could be "group1-case1-create"
@@ -579,7 +580,7 @@ class GroupStatusSync {
         const status = {};
         
         for (let i = 1; i <= 5; i++) {
-            const stored = localStorage.getItem(`fahla_group_${i}_status`);
+            const stored = localStorage.getItem(`workshop_group_${i}_status`);
             if (stored) {
                 status[i] = JSON.parse(stored);
             } else {
@@ -622,7 +623,7 @@ class GroupStatusSync {
         };
         
         // Store locally for immediate feedback
-        localStorage.setItem(`fahla_group_${groupId}_status`, JSON.stringify(myStatus));
+        localStorage.setItem(`workshop_group_${groupId}_status`, JSON.stringify(myStatus));
         
         // Update local cache
         this.groupStatus.set(groupId, myStatus);
